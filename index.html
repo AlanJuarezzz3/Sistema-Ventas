@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Sistema de Ventas — Tester API</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: sans-serif; background: #f4f4f4; color: #222; padding: 2rem; }
+    h1 { font-size: 22px; font-weight: 500; margin-bottom: 0.25rem; }
+    .subtitle { font-size: 14px; color: #666; margin-bottom: 2rem; }
+    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; }
+    @media (max-width: 700px) { .grid { grid-template-columns: 1fr; } }
+    .card { background: #fff; border: 0.5px solid #ddd; border-radius: 12px; padding: 1.25rem; }
+    .card h2 { font-size: 15px; font-weight: 500; margin-bottom: 1rem; padding-bottom: 0.5rem; border-bottom: 0.5px solid #eee; }
+    label { display: block; font-size: 13px; color: #555; margin-bottom: 4px; margin-top: 10px; }
+    input { width: 100%; padding: 8px 10px; font-size: 14px; border: 0.5px solid #ccc; border-radius: 8px; background: #fff; color: #222; }
+    input:focus { outline: none; border-color: #888; }
+    button { margin-top: 14px; width: 100%; padding: 9px; font-size: 14px; border: 0.5px solid #ccc; border-radius: 8px; background: transparent; cursor: pointer; transition: background 0.15s; }
+    button:hover { background: #f0f0f0; }
+    button:active { transform: scale(0.98); }
+    .resp { margin-top: 12px; background: #f9f9f9; border: 0.5px solid #e0e0e0; border-radius: 8px; padding: 10px; font-size: 12px; font-family: monospace; white-space: pre-wrap; min-height: 48px; color: #333; max-height: 180px; overflow-y: auto; }
+    .resp.ok { border-color: #a3d9a5; background: #f0faf0; color: #1a5c1a; }
+    .resp.err { border-color: #f0a0a0; background: #fff0f0; color: #7a1a1a; }
+    .token-bar { background: #fff; border: 0.5px solid #ddd; border-radius: 12px; padding: 1rem 1.25rem; margin-bottom: 1.5rem; display: flex; align-items: center; gap: 12px; }
+    .token-bar label { font-size: 13px; color: #555; white-space: nowrap; margin: 0; }
+    .token-bar input { flex: 1; }
+    .tag { display: inline-block; font-size: 11px; padding: 2px 8px; border-radius: 6px; font-weight: 500; margin-bottom: 6px; }
+    .tag.post { background: #e8f0fe; color: #1a56a0; }
+    .tag.get  { background: #e6faf0; color: #0f6e56; }
+    .tag.put  { background: #fff8e1; color: #7a5a00; }
+    .tag.del  { background: #fdecea; color: #991a1a; }
+  </style>
+</head>
+<body>
+
+<h1>Sistema de Ventas — API Tester</h1>
+<p class="subtitle">Tester para probar todos los endpoints del backend en localhost:3000</p>
+
+<div class="token-bar">
+  <label>Token JWT:</label>
+  <input id="token" type="text" placeholder="Se completa automáticamente al hacer login..." />
+</div>
+
+<div class="grid">
+
+  <!-- REGISTER -->
+  <div class="card">
+    <span class="tag post">POST</span>
+    <h2>/auth/register</h2>
+    <label>Nombre</label>
+    <input id="reg-nombre" placeholder="Alan" />
+    <label>Email</label>
+    <input id="reg-email" placeholder="alan@email.com" />
+    <label>Password</label>
+    <input id="reg-pass" type="password" placeholder="••••••" />
+    <label>Rol</label>
+    <input id="reg-rol" placeholder="admin o vendedor" />
+    <button onclick="register()">Registrar usuario</button>
+    <div class="resp" id="resp-register">—</div>
+  </div>
+
+  <!-- LOGIN -->
+  <div class="card">
+    <span class="tag post">POST</span>
+    <h2>/auth/login</h2>
+    <label>Email</label>
+    <input id="login-email" placeholder="alan@email.com" />
+    <label>Password</label>
+    <input id="login-pass" type="password" placeholder="••••••" />
+    <button onclick="login()">Iniciar sesión</button>
+    <div class="resp" id="resp-login">—</div>
+  </div>
+
+  <!-- GET PRODUCTOS -->
+  <div class="card">
+    <span class="tag get">GET</span>
+    <h2>/productos</h2>
+    <p style="font-size:13px;color:#666;margin-top:4px;">Requiere token. Devuelve todos los productos.</p>
+    <button onclick="getProductos()">Obtener productos</button>
+    <div class="resp" id="resp-get">—</div>
+  </div>
+
+  <!-- CREATE PRODUCTO -->
+  <div class="card">
+    <span class="tag post">POST</span>
+    <h2>/productos</h2>
+    <label>Nombre</label>
+    <input id="prod-nombre" placeholder="Notebook Dell" />
+    <label>Precio</label>
+    <input id="prod-precio" placeholder="1500.00" />
+    <button onclick="createProducto()">Crear producto</button>
+    <div class="resp" id="resp-create">—</div>
+  </div>
+
+  <!-- UPDATE PRODUCTO -->
+  <div class="card">
+    <span class="tag put">PUT</span>
+    <h2>/productos/:id</h2>
+    <label>ID del producto</label>
+    <input id="upd-id" placeholder="1" />
+    <label>Nuevo nombre</label>
+    <input id="upd-nombre" placeholder="Notebook Dell Pro" />
+    <label>Nuevo precio</label>
+    <input id="upd-precio" placeholder="1800.00" />
+    <button onclick="updateProducto()">Actualizar producto</button>
+    <div class="resp" id="resp-update">—</div>
+  </div>
+
+  <!-- DELETE PRODUCTO -->
+  <div class="card">
+    <span class="tag del">DELETE</span>
+    <h2>/productos/:id</h2>
+    <label>ID del producto</label>
+    <input id="del-id" placeholder="1" />
+    <button onclick="deleteProducto()">Eliminar producto</button>
+    <div class="resp" id="resp-delete">—</div>
+  </div>
+
+</div>
+
+<script>
+  const BASE = "http://localhost:3000";
+
+  function getToken() {
+    return document.getElementById("token").value.trim();
+  }
+
+  function showResp(id, data, ok) {
+    const el = document.getElementById(id);
+    el.textContent = JSON.stringify(data, null, 2);
+    el.className = "resp " + (ok ? "ok" : "err");
+  }
+
+  async function register() {
+    const body = {
+      nombre: document.getElementById("reg-nombre").value,
+      email: document.getElementById("reg-email").value,
+      password: document.getElementById("reg-pass").value,
+      rol: document.getElementById("reg-rol").value || "vendedor"
+    };
+    try {
+      const r = await fetch(`${BASE}/auth/register`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body)
+      });
+      const data = await r.json();
+      showResp("resp-register", data, r.ok);
+    } catch(e) { showResp("resp-register", { error: e.message }, false); }
+  }
+
+  async function login() {
+    const body = {
+      email: document.getElementById("login-email").value,
+      password: document.getElementById("login-pass").value
+    };
+    try {
+      const r = await fetch(`${BASE}/auth/login`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body)
+      });
+      const data = await r.json();
+      showResp("resp-login", data, r.ok);
+      if (data.token) {
+        document.getElementById("token").value = data.token;
+      }
+    } catch(e) { showResp("resp-login", { error: e.message }, false); }
+  }
+
+  async function getProductos() {
+    try {
+      const r = await fetch(`${BASE}/productos`, {
+        headers: { "Authorization": `Bearer ${getToken()}` }
+      });
+      const data = await r.json();
+      showResp("resp-get", data, r.ok);
+    } catch(e) { showResp("resp-get", { error: e.message }, false); }
+  }
+
+  async function createProducto() {
+    const body = {
+      nombre: document.getElementById("prod-nombre").value,
+      precio: document.getElementById("prod-precio").value
+    };
+    try {
+      const r = await fetch(`${BASE}/productos`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "Authorization": `Bearer ${getToken()}` },
+        body: JSON.stringify(body)
+      });
+      const data = await r.json();
+      showResp("resp-create", data, r.ok);
+    } catch(e) { showResp("resp-create", { error: e.message }, false); }
+  }
+
+  async function updateProducto() {
+    const id = document.getElementById("upd-id").value;
+    const body = {
+      nombre: document.getElementById("upd-nombre").value,
+      precio: document.getElementById("upd-precio").value
+    };
+    try {
+      const r = await fetch(`${BASE}/productos/${id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json", "Authorization": `Bearer ${getToken()}` },
+        body: JSON.stringify(body)
+      });
+      const data = await r.json();
+      showResp("resp-update", data, r.ok);
+    } catch(e) { showResp("resp-update", { error: e.message }, false); }
+  }
+
+  async function deleteProducto() {
+    const id = document.getElementById("del-id").value;
+    try {
+      const r = await fetch(`${BASE}/productos/${id}`, {
+        method: "DELETE",
+        headers: { "Authorization": `Bearer ${getToken()}` }
+      });
+      const data = await r.json();
+      showResp("resp-delete", data, r.ok);
+    } catch(e) { showResp("resp-delete", { error: e.message }, false); }
+  }
+</script>
+
+</body>
+</html>
