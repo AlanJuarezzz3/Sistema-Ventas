@@ -1,5 +1,7 @@
 import { useState, useEffect } from "react";
 import api from "../api/axios";
+import { getUsuario } from "../api/auth";
+import { s } from "../styles";
 
 function Usuarios() {
   const [usuarios, setUsuarios] = useState([]);
@@ -8,6 +10,8 @@ function Usuarios() {
   const [password, setPassword] = useState("");
   const [rol, setRol] = useState("vendedor");
   const [error, setError] = useState("");
+  const [showForm, setShowForm] = useState(false);
+  const usuarioActual = getUsuario();
 
   const fetchUsuarios = async () => {
     try {
@@ -27,11 +31,8 @@ function Usuarios() {
     if (!nombre || !email || !password) return setError("Todos los campos son obligatorios");
     try {
       await api.post("/usuarios", { nombre, email, password, rol });
-      setNombre("");
-      setEmail("");
-      setPassword("");
-      setRol("vendedor");
-      setError("");
+      setNombre(""); setEmail(""); setPassword(""); setRol("vendedor");
+      setError(""); setShowForm(false);
       fetchUsuarios();
     } catch {
       setError("Error al crear usuario");
@@ -42,93 +43,115 @@ function Usuarios() {
     try {
       await api.delete(`/usuarios/${id}`);
       fetchUsuarios();
-    } catch {
-      setError("Error al eliminar usuario");
+    } catch (err) {
+      setError(err.response?.data?.mensaje || "Error al eliminar usuario");
     }
   };
 
   return (
-    <div>
-      <h2 style={titleStyle}>Usuarios</h2>
-
-      {error && <p style={errorStyle}>{error}</p>}
-
-      <div style={formStyle}>
-        <input
-          style={inputStyle}
-          placeholder="Nombre"
-          value={nombre}
-          onChange={(e) => setNombre(e.target.value)}
-        />
-        <input
-          style={inputStyle}
-          placeholder="Email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-        />
-        <input
-          style={inputStyle}
-          type="password"
-          placeholder="Password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-        />
-        <select
-          style={selectStyle}
-          value={rol}
-          onChange={(e) => setRol(e.target.value)}
-        >
-          <option value="vendedor">Vendedor</option>
-          <option value="admin">Admin</option>
-        </select>
-        <button onClick={handleSubmit} style={btnStyle}>Crear usuario</button>
+    <div style={{ padding: "2rem" }}>
+      <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: "1.5rem" }}>
+        <div>
+          <h2 style={{ ...s.title, fontSize: "24px" }}>Usuarios</h2>
+          <p style={{ ...s.subtitle, fontSize: "14px" }}>{usuarios.length} usuarios en total</p>
+        </div>
+        {!showForm && (
+          <button onClick={() => setShowForm(true)} style={s.btnPrimary}>
+            + Agregar usuario
+          </button>
+        )}
       </div>
 
-      <table style={tableStyle}>
-        <thead>
-          <tr>
-            <th style={thStyle}>ID</th>
-            <th style={thStyle}>Nombre</th>
-            <th style={thStyle}>Email</th>
-            <th style={thStyle}>Rol</th>
-            <th style={thStyle}>Creado</th>
-            <th style={thStyle}>Acciones</th>
-          </tr>
-        </thead>
-        <tbody>
-          {usuarios.map((u) => (
-            <tr key={u.id}>
-              <td style={tdStyle}>{u.id}</td>
-              <td style={tdStyle}>{u.nombre}</td>
-              <td style={tdStyle}>{u.email}</td>
-              <td style={tdStyle}>
-                <span style={u.rol === "admin" ? adminBadge : vendedorBadge}>
-                  {u.rol}
-                </span>
-              </td>
-              <td style={tdStyle}>{new Date(u.creado_at).toLocaleDateString("es-AR")}</td>
-              <td style={tdStyle}>
-                <button onClick={() => handleDelete(u.id)} style={deleteBtn}>Eliminar</button>
-              </td>
+      {error && <div style={{ ...s.error, marginBottom: "1rem" }}>{error}</div>}
+
+      {showForm && (
+        <div style={{ ...s.card, padding: "1.25rem", marginBottom: "1.5rem" }}>
+          <p style={{ color: "var(--text-primary)", fontSize: "14px", fontWeight: "500", marginBottom: "1rem" }}>
+            Nuevo usuario
+          </p>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr", gap: "12px", marginBottom: "1rem" }}>
+            <div>
+              <label style={s.label}>Nombre</label>
+              <input style={s.input} placeholder="Juan Pérez" value={nombre} onChange={(e) => setNombre(e.target.value)} />
+            </div>
+            <div>
+              <label style={s.label}>Email</label>
+              <input style={s.input} placeholder="juan@email.com" value={email} onChange={(e) => setEmail(e.target.value)} />
+            </div>
+            <div>
+              <label style={s.label}>Password</label>
+              <input type="password" style={s.input} placeholder="••••••" value={password} onChange={(e) => setPassword(e.target.value)} />
+            </div>
+            <div>
+              <label style={s.label}>Rol</label>
+              <select style={{ ...s.select, width: "100%" }} value={rol} onChange={(e) => setRol(e.target.value)}>
+                <option value="vendedor">Vendedor</option>
+                <option value="admin">Admin</option>
+              </select>
+            </div>
+          </div>
+          <div style={{ display: "flex", gap: "8px" }}>
+            <button onClick={handleSubmit} style={s.btnPrimary}>Guardar</button>
+            <button onClick={() => { setShowForm(false); setError(""); }} style={s.btnSecondary}>Cancelar</button>
+          </div>
+        </div>
+      )}
+
+      <div style={{ ...s.card, overflow: "hidden" }}>
+        <table style={s.table}>
+          <thead>
+            <tr>
+              <th style={s.th}>ID</th>
+              <th style={s.th}>Nombre</th>
+              <th style={s.th}>Email</th>
+              <th style={s.th}>Rol</th>
+              <th style={s.th}>Creado</th>
+              <th style={s.th}>Acciones</th>
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {usuarios.map((u) => (
+              <tr key={u.id}
+                style={{ transition: "background 0.15s" }}
+                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = "var(--bg-input)"}
+                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = "transparent"}
+              >
+                <td style={s.tdMuted}>{u.id}</td>
+                <td style={s.td}>
+                  <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                    <div style={{
+                      width: "30px", height: "30px", borderRadius: "50%",
+                      backgroundColor: "var(--accent-light)",
+                      display: "flex", alignItems: "center", justifyContent: "center",
+                      fontSize: "13px", fontWeight: "600", color: "var(--accent-text)",
+                    }}>
+                      {u.nombre.charAt(0).toUpperCase()}
+                    </div>
+                    <span style={{ fontWeight: "500", color: "var(--text-primary)" }}>{u.nombre}</span>
+                    {usuarioActual?.id === u.id && (
+                      <span style={{ ...s.badgeAccent, fontSize: "11px" }}>Vos</span>
+                    )}
+                  </div>
+                </td>
+                <td style={s.td}>{u.email}</td>
+                <td style={s.td}>
+                  <span style={u.rol === "admin" ? s.badgeAccent : s.badgeSuccess}>
+                    {u.rol}
+                  </span>
+                </td>
+                <td style={s.td}>{new Date(u.creado_at).toLocaleDateString("es-AR")}</td>
+                <td style={s.td}>
+                  {usuarioActual?.id !== u.id && (
+                    <button onClick={() => handleDelete(u.id)} style={s.btnDanger}>Eliminar</button>
+                  )}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }
-
-const titleStyle = { fontSize: "20px", fontWeight: "500", marginBottom: "1.5rem" };
-const errorStyle = { color: "#c0392b", fontSize: "13px", marginBottom: "1rem" };
-const formStyle = { display: "flex", gap: "12px", marginBottom: "1.5rem", flexWrap: "wrap" };
-const inputStyle = { padding: "8px 10px", fontSize: "14px", border: "0.5px solid #ccc", borderRadius: "8px", minWidth: "180px" };
-const selectStyle = { padding: "8px 10px", fontSize: "14px", border: "0.5px solid #ccc", borderRadius: "8px" };
-const btnStyle = { padding: "8px 16px", fontSize: "14px", border: "0.5px solid #ccc", borderRadius: "8px", background: "#1e1e2e", color: "#fff", cursor: "pointer" };
-const tableStyle = { width: "100%", borderCollapse: "collapse" };
-const thStyle = { textAlign: "left", padding: "10px 12px", fontSize: "13px", color: "#555", borderBottom: "0.5px solid #ddd" };
-const tdStyle = { padding: "10px 12px", fontSize: "14px", borderBottom: "0.5px solid #eee" };
-const deleteBtn = { padding: "4px 12px", fontSize: "13px", border: "0.5px solid #ffb3b3", borderRadius: "6px", cursor: "pointer", background: "transparent", color: "#c0392b" };
-const adminBadge = { padding: "2px 10px", borderRadius: "6px", fontSize: "12px", background: "#e8f0fe", color: "#1a56a0", fontWeight: "500" };
-const vendedorBadge = { padding: "2px 10px", borderRadius: "6px", fontSize: "12px", background: "#e6faf0", color: "#0f6e56", fontWeight: "500" };
 
 export default Usuarios;

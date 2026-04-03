@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import api from "../api/axios";
 import { isAdmin } from "../api/auth";
 import { exportarVentasPDF, exportarVentasExcel } from "../api/exportUtils";
+import { s } from "../styles";
 
 function Ventas() {
   const [ventas, setVentas] = useState([]);
@@ -104,36 +105,31 @@ function Ventas() {
   });
 
   return (
-    <div>
-      <div className="flex items-center justify-between mb-6">
+    <div style={{ padding: "2rem" }}>
+      <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: "1.5rem" }}>
         <div>
-          <h2 className="text-xl font-medium text-gray-900">Ventas</h2>
-          <p className="text-sm text-gray-500 mt-0.5">{ventas.length} ventas en total</p>
+          <h2 style={{ ...s.title, fontSize: "24px" }}>Ventas</h2>
+          <p style={{ ...s.subtitle, fontSize: "14px" }}>{ventas.length} ventas en total</p>
         </div>
         {!showForm && (
-          <button
-            onClick={() => setShowForm(true)}
-            className="bg-gray-900 text-white text-sm px-4 py-2 rounded-lg hover:bg-gray-700 transition-colors cursor-pointer"
-          >
+          <button onClick={() => setShowForm(true)} style={s.btnPrimary}>
             + Nueva venta
           </button>
         )}
       </div>
 
-      {error && (
-        <div className="bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg px-4 py-3 mb-4">
-          {error}
-        </div>
-      )}
+      {error && <div style={{ ...s.error, marginBottom: "1rem" }}>{error}</div>}
 
       {showForm && (
-        <div className="bg-white border border-gray-200 rounded-xl p-5 mb-6">
-          <h3 className="text-sm font-medium text-gray-900 mb-4">Nueva venta</h3>
+        <div style={{ ...s.card, padding: "1.25rem", marginBottom: "1.5rem" }}>
+          <p style={{ color: "var(--text-primary)", fontSize: "14px", fontWeight: "500", marginBottom: "1rem" }}>
+            Nueva venta
+          </p>
 
-          <div className="mb-4">
-            <label className="block text-xs text-gray-500 mb-1.5">Cliente</label>
+          <div style={{ marginBottom: "1rem" }}>
+            <label style={s.label}>Cliente</label>
             <select
-              className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-gray-400 transition-colors"
+              style={{ ...s.select, width: "100%" }}
               value={clienteId}
               onChange={(e) => setClienteId(e.target.value)}
             >
@@ -144,15 +140,14 @@ function Ventas() {
             </select>
           </div>
 
-          <label className="block text-xs text-gray-500 mb-2">Productos</label>
+          <label style={s.label}>Productos</label>
           {items.map((item, index) => {
             const stock = getStockDisponible(item.producto_id);
             return (
-              <div key={index} className="mb-3">
-                <div className="flex gap-2 items-center">
+              <div key={index} style={{ marginBottom: "8px" }}>
+                <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
                   <select
-                    className="flex-2 px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-gray-400 transition-colors"
-                    style={{ flex: 2 }}
+                    style={{ ...s.select, flex: 2 }}
                     value={item.producto_id}
                     onChange={(e) => handleItemChange(index, "producto_id", e.target.value)}
                   >
@@ -162,30 +157,26 @@ function Ventas() {
                     ))}
                   </select>
                   <input
-                    className="px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-gray-400 transition-colors"
-                    style={{ flex: 1 }}
+                    style={{ ...s.input, flex: 1 }}
                     placeholder="Cantidad"
                     value={item.cantidad}
                     onChange={(e) => handleItemChange(index, "cantidad", e.target.value)}
                   />
                   <input
-                    className="px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-gray-400 transition-colors"
-                    style={{ flex: 1 }}
+                    style={{ ...s.input, flex: 1 }}
                     placeholder="Precio unitario"
                     value={item.precio_unitario}
                     onChange={(e) => handleItemChange(index, "precio_unitario", e.target.value)}
                   />
                   {items.length > 1 && (
-                    <button
-                      onClick={() => removeItem(index)}
-                      className="text-red-400 hover:text-red-600 border border-red-100 px-3 py-2 rounded-lg hover:bg-red-50 transition-colors cursor-pointer text-sm"
-                    >
-                      ✕
-                    </button>
+                    <button onClick={() => removeItem(index)} style={s.btnDanger}>✕</button>
                   )}
                 </div>
                 {item.producto_id && stock !== null && (
-                  <p className={`text-xs mt-1 ml-1 ${stock === 0 ? "text-red-500" : stock <= 5 ? "text-yellow-600" : "text-green-600"}`}>
+                  <p style={{
+                    fontSize: "12px", marginTop: "4px", marginLeft: "2px",
+                    color: stock === 0 ? "var(--danger)" : stock <= 5 ? "var(--warning)" : "var(--success)"
+                  }}>
                     Stock disponible: {stock}
                   </p>
                 )}
@@ -193,106 +184,85 @@ function Ventas() {
             );
           })}
 
-          <button
-            onClick={addItem}
-            className="text-sm text-gray-500 hover:text-gray-900 border border-gray-200 px-3 py-1.5 rounded-lg hover:bg-gray-50 transition-colors cursor-pointer mb-4"
-          >
+          <button onClick={addItem} style={{ ...s.btnSecondary, fontSize: "13px", padding: "6px 12px", marginBottom: "1rem" }}>
             + Agregar producto
           </button>
 
-          <div className="flex items-center justify-between pt-4 border-t border-gray-100">
-            <p className="text-sm font-medium text-gray-900">Total: ${calcularTotal()}</p>
-            <div className="flex gap-2">
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderTop: "1px solid var(--border)", paddingTop: "1rem" }}>
+            <p style={{ color: "var(--text-primary)", fontSize: "15px", fontWeight: "500" }}>
+              Total: ${calcularTotal()}
+            </p>
+            <div style={{ display: "flex", gap: "8px" }}>
               <button
                 onClick={() => { setShowForm(false); setError(""); setClienteId(""); setItems([{ producto_id: "", cantidad: "", precio_unitario: "" }]); }}
-                className="text-sm px-4 py-2 rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors cursor-pointer"
+                style={s.btnSecondary}
               >
                 Cancelar
               </button>
-              <button
-                onClick={handleSubmit}
-                className="bg-gray-900 text-white text-sm px-4 py-2 rounded-lg hover:bg-gray-700 transition-colors cursor-pointer"
-              >
-                Crear venta
-              </button>
+              <button onClick={handleSubmit} style={s.btnPrimary}>Crear venta</button>
             </div>
           </div>
         </div>
       )}
 
-      <div className="flex gap-3 mb-4 items-center">
-        <select
-          className="px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-gray-400 transition-colors"
-          value={filtroEstado}
-          onChange={(e) => setFiltroEstado(e.target.value)}
-        >
+      <div style={{ display: "flex", gap: "12px", marginBottom: "1rem", alignItems: "center", flexWrap: "wrap" }}>
+        <select style={s.select} value={filtroEstado} onChange={(e) => setFiltroEstado(e.target.value)}>
           <option value="todas">Todas</option>
           <option value="activa">Activas</option>
           <option value="anulada">Anuladas</option>
         </select>
-        <span className="text-sm text-gray-400">
+        <span style={{ ...s.muted, fontSize: "14px", color: "var(--text-secondary)" }}>
           {ventasFiltradas.length} resultado{ventasFiltradas.length !== 1 ? "s" : ""}
         </span>
         {admin && (
-          <div className="ml-auto flex gap-2">
-            <button onClick={() => exportarVentasPDF(ventasFiltradas)} className="text-sm px-3 py-2 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors cursor-pointer">
-              Exportar PDF
-            </button>
-            <button onClick={() => exportarVentasExcel(ventasFiltradas)} className="text-sm px-3 py-2 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors cursor-pointer">
-              Exportar Excel
-            </button>
+          <div style={{ marginLeft: "auto", display: "flex", gap: "8px" }}>
+            <button onClick={() => exportarVentasPDF(ventasFiltradas)} style={s.btnPrimary}>Exportar PDF</button>
+            <button onClick={() => exportarVentasExcel(ventasFiltradas)} style={s.btnPrimary}>Exportar Excel</button>
           </div>
         )}
       </div>
 
-      <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
-        <table className="w-full">
+      <div style={{ ...s.card, overflow: "hidden" }}>
+        <table style={s.table}>
           <thead>
-            <tr className="border-b border-gray-100">
-              <th className="text-left px-4 py-3 text-xs font-medium text-gray-500 uppercase tracking-wide">ID</th>
-              <th className="text-left px-4 py-3 text-xs font-medium text-gray-500 uppercase tracking-wide">Cliente</th>
-              <th className="text-left px-4 py-3 text-xs font-medium text-gray-500 uppercase tracking-wide">Total</th>
-              <th className="text-left px-4 py-3 text-xs font-medium text-gray-500 uppercase tracking-wide">Estado</th>
-              <th className="text-left px-4 py-3 text-xs font-medium text-gray-500 uppercase tracking-wide">Fecha</th>
-              {admin && <th className="text-left px-4 py-3 text-xs font-medium text-gray-500 uppercase tracking-wide">Acciones</th>}
+            <tr>
+              <th style={s.th}>ID</th>
+              <th style={s.th}>Cliente</th>
+              <th style={s.th}>Total</th>
+              <th style={s.th}>Estado</th>
+              <th style={s.th}>Fecha</th>
+              {admin && <th style={s.th}>Acciones</th>}
             </tr>
           </thead>
           <tbody>
             {ventasFiltradas.length === 0 ? (
               <tr>
-                <td colSpan={admin ? 6 : 5} className="px-4 py-8 text-center text-sm text-gray-400">
+                <td colSpan={admin ? 6 : 5} style={{ ...s.td, textAlign: "center", color: "var(--text-muted)" }}>
                   No se encontraron ventas
                 </td>
               </tr>
             ) : (
               ventasFiltradas.map((v) => (
-                <tr key={v.id} className={`border-b border-gray-50 transition-colors ${v.estado === "anulada" ? "opacity-50" : "hover:bg-gray-50"}`}>
-                  <td className="px-4 py-3 text-sm text-gray-400">{v.id}</td>
-                  <td className="px-4 py-3 text-sm font-medium text-gray-900">{v.cliente_nombre}</td>
-                  <td className={`px-4 py-3 text-sm text-gray-700 ${v.estado === "anulada" ? "line-through" : ""}`}>
+                <tr key={v.id}
+                  style={{ opacity: v.estado === "anulada" ? 0.5 : 1, transition: "background 0.15s" }}
+                  onMouseEnter={(e) => e.currentTarget.style.backgroundColor = "var(--bg-input)"}
+                  onMouseLeave={(e) => e.currentTarget.style.backgroundColor = "transparent"}
+                >
+                  <td style={s.tdMuted}>{v.id}</td>
+                  <td style={{ ...s.td, fontWeight: "500" }}>{v.cliente_nombre}</td>
+                  <td style={{ ...s.td, textDecoration: v.estado === "anulada" ? "line-through" : "none" }}>
                     ${parseFloat(v.total).toLocaleString("es-AR")}
                   </td>
-                  <td className="px-4 py-3">
-                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                      v.estado === "activa"
-                        ? "bg-green-50 text-green-700"
-                        : "bg-gray-100 text-gray-500"
-                    }`}>
+                  <td style={s.td}>
+                    <span style={v.estado === "activa" ? s.badgeSuccess : s.badgeMuted}>
                       {v.estado}
                     </span>
                   </td>
-                  <td className="px-4 py-3 text-sm text-gray-600">
-                    {new Date(v.fecha).toLocaleDateString("es-AR")}
-                  </td>
+                  <td style={s.td}>{new Date(v.fecha).toLocaleDateString("es-AR")}</td>
                   {admin && (
-                    <td className="px-4 py-3">
+                    <td style={s.td}>
                       {v.estado === "activa" && (
-                        <button
-                          onClick={() => handleAnular(v.id)}
-                          className="text-xs text-red-500 hover:text-red-700 border border-red-100 px-3 py-1.5 rounded-lg hover:bg-red-50 transition-colors cursor-pointer"
-                        >
-                          Anular
-                        </button>
+                        <button onClick={() => handleAnular(v.id)} style={s.btnDanger}>Anular</button>
                       )}
                     </td>
                   )}

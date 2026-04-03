@@ -1,11 +1,13 @@
 import { useNavigate, useRouterState } from "@tanstack/react-router";
 import { isAdmin } from "../api/auth";
+import { useTheme } from "../context/ThemeContext";
 
 function Navbar() {
   const navigate = useNavigate();
   const routerState = useRouterState();
   const currentPath = routerState.location.pathname;
   const admin = isAdmin();
+  const { darkMode, toggleDarkMode } = useTheme();
 
   const handleLogout = () => {
     localStorage.removeItem("token");
@@ -21,25 +23,44 @@ function Navbar() {
   ];
 
   return (
-    <nav className="bg-gray-900 text-white px-6 py-0 flex items-center justify-between h-14 border-b border-gray-800">
-      <div className="flex items-center gap-8">
-        <div className="flex items-center gap-2.5">
-          <div className="w-7 h-7 bg-white rounded-lg flex items-center justify-center">
-            <span className="text-gray-900 text-xs font-medium">SV</span>
+    <nav style={{
+      backgroundColor: "var(--nav-bg)",
+      borderBottom: "1px solid var(--nav-border)",
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "space-between",
+      padding: "0 1.5rem",
+      height: "56px",
+    }}>
+      <div style={{ display: "flex", alignItems: "center", gap: "2rem" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+          <div style={{
+            width: "28px", height: "28px",
+            backgroundColor: "var(--accent)",
+            borderRadius: "8px",
+            display: "flex", alignItems: "center", justifyContent: "center",
+          }}>
+            <span style={{ color: "#fff", fontSize: "11px", fontWeight: "600" }}>SV</span>
           </div>
-          <span className="text-sm font-medium">Sistema de Ventas</span>
+          <span style={{ color: "#fff", fontSize: "14px", fontWeight: "500" }}>Sistema de Ventas</span>
         </div>
 
-        <div className="flex items-center">
+        <div style={{ display: "flex" }}>
           {navLinks.map((link) => (
             <button
               key={link.to}
               onClick={() => navigate({ to: link.to })}
-              className={`px-4 h-14 text-sm transition-colors cursor-pointer border-b-2 ${
-                currentPath === link.to
-                  ? "text-white border-white"
-                  : "text-gray-400 border-transparent hover:text-white"
-              }`}
+              style={{
+                padding: "0 16px",
+                height: "56px",
+                fontSize: "14px",
+                cursor: "pointer",
+                background: "transparent",
+                border: "none",
+                borderBottom: currentPath === link.to ? "2px solid var(--accent)" : "2px solid transparent",
+                color: currentPath === link.to ? "#fff" : "rgba(255,255,255,0.5)",
+                transition: "color 0.15s",
+              }}
             >
               {link.label}
             </button>
@@ -47,12 +68,35 @@ function Navbar() {
         </div>
       </div>
 
-      <button
-        onClick={handleLogout}
-        className="text-sm text-gray-400 hover:text-red-400 transition-colors cursor-pointer"
-      >
-        Cerrar sesión
-      </button>
+      <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+        <button
+          onClick={toggleDarkMode}
+          style={{
+            width: "32px", height: "32px",
+            display: "flex", alignItems: "center", justifyContent: "center",
+            borderRadius: "8px",
+            background: "rgba(255,255,255,0.05)",
+            border: "1px solid rgba(255,255,255,0.1)",
+            cursor: "pointer",
+            fontSize: "15px",
+          }}
+          title={darkMode ? "Modo claro" : "Modo oscuro"}
+        >
+          {darkMode ? "☀️" : "🌙"}
+        </button>
+        <button
+          onClick={handleLogout}
+          style={{
+            fontSize: "13px",
+            color: "rgba(255,255,255,0.5)",
+            background: "transparent",
+            border: "none",
+            cursor: "pointer",
+          }}
+        >
+          Cerrar sesión
+        </button>
+      </div>
     </nav>
   );
 }

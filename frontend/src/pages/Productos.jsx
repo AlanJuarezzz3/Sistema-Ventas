@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import api from "../api/axios";
 import { isAdmin } from "../api/auth";
 import { exportarProductosPDF, exportarProductosExcel } from "../api/exportUtils";
+import { s } from "../styles";
 
 function Productos() {
   const [productos, setProductos] = useState([]);
@@ -37,23 +38,17 @@ function Productos() {
       } else {
         await api.post("/productos", { nombre, precio, stock });
       }
-      setNombre("");
-      setPrecio("");
-      setStock("");
-      setEditId(null);
-      setError("");
-      setShowForm(false);
+      setNombre(""); setPrecio(""); setStock("");
+      setEditId(null); setError(""); setShowForm(false);
       fetchProductos();
     } catch {
       setError("Error al guardar producto");
     }
   };
 
-  const handleEdit = (producto) => {
-    setEditId(producto.id);
-    setNombre(producto.nombre);
-    setPrecio(producto.precio);
-    setStock(producto.stock);
+  const handleEdit = (p) => {
+    setEditId(p.id); setNombre(p.nombre);
+    setPrecio(p.precio); setStock(p.stock);
     setShowForm(true);
   };
 
@@ -67,12 +62,8 @@ function Productos() {
   };
 
   const handleCancelar = () => {
-    setEditId(null);
-    setNombre("");
-    setPrecio("");
-    setStock("");
-    setError("");
-    setShowForm(false);
+    setEditId(null); setNombre(""); setPrecio(""); setStock("");
+    setError(""); setShowForm(false);
   };
 
   const productosFiltrados = productos.filter((p) => {
@@ -86,149 +77,110 @@ function Productos() {
   });
 
   return (
-    <div>
-      <div className="flex items-center justify-between mb-6">
+    <div style={{ padding: "2rem" }}>
+      <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: "1.5rem" }}>
         <div>
-          <h2 className="text-xl font-medium text-gray-900">Productos</h2>
-          <p className="text-sm text-gray-500 mt-0.5">{productos.length} productos en total</p>
+         <h2 style={{ ...s.title, fontSize: "24px" }}>Productos</h2>
+<p style={{ ...s.subtitle, fontSize: "14px" }}>{productos.length} productos en total</p>
         </div>
         {admin && !showForm && (
-          <button
-            onClick={() => setShowForm(true)}
-            className="bg-gray-900 text-white text-sm px-4 py-2 rounded-lg hover:bg-gray-700 transition-colors cursor-pointer"
-          >
+          <button onClick={() => setShowForm(true)} style={s.btnPrimary}>
             + Agregar producto
           </button>
         )}
       </div>
 
-      {error && (
-        <div className="bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg px-4 py-3 mb-4">
-          {error}
-        </div>
-      )}
+      {error && <div style={{ ...s.error, marginBottom: "1rem" }}>{error}</div>}
 
       {admin && showForm && (
-        <div className="bg-white border border-gray-200 rounded-xl p-5 mb-6">
-          <h3 className="text-sm font-medium text-gray-900 mb-4">
+        <div style={{ ...s.card, padding: "1.25rem", marginBottom: "1.5rem" }}>
+          <p style={{ ...s.subtitle, marginBottom: "1rem", fontWeight: "500", color: "var(--text-primary)" }}>
             {editId ? "Editar producto" : "Nuevo producto"}
-          </h3>
-          <div className="grid grid-cols-3 gap-3 mb-4">
+          </p>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "12px", marginBottom: "1rem" }}>
             <div>
-              <label className="block text-xs text-gray-500 mb-1.5">Nombre</label>
-              <input
-                className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-gray-400 transition-colors"
-                placeholder="Notebook Dell"
-                value={nombre}
-                onChange={(e) => setNombre(e.target.value)}
-              />
+              <label style={s.label}>Nombre</label>
+              <input style={s.input} placeholder="Notebook Dell" value={nombre} onChange={(e) => setNombre(e.target.value)} />
             </div>
             <div>
-              <label className="block text-xs text-gray-500 mb-1.5">Precio</label>
-              <input
-                className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-gray-400 transition-colors"
-                placeholder="1500"
-                value={precio}
-                onChange={(e) => setPrecio(e.target.value)}
-              />
+              <label style={s.label}>Precio</label>
+              <input style={s.input} placeholder="1500" value={precio} onChange={(e) => setPrecio(e.target.value)} />
             </div>
             <div>
-              <label className="block text-xs text-gray-500 mb-1.5">Stock</label>
-              <input
-                className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-gray-400 transition-colors"
-                placeholder="10"
-                value={stock}
-                onChange={(e) => setStock(e.target.value)}
-              />
+              <label style={s.label}>Stock</label>
+              <input style={s.input} placeholder="10" value={stock} onChange={(e) => setStock(e.target.value)} />
             </div>
           </div>
-          <div className="flex gap-2">
-            <button onClick={handleSubmit} className="bg-gray-900 text-white text-sm px-4 py-2 rounded-lg hover:bg-gray-700 transition-colors cursor-pointer">
-              {editId ? "Actualizar" : "Guardar"}
-            </button>
-            <button onClick={handleCancelar} className="text-sm px-4 py-2 rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors cursor-pointer">
-              Cancelar
-            </button>
+          <div style={{ display: "flex", gap: "8px" }}>
+            <button onClick={handleSubmit} style={s.btnPrimary}>{editId ? "Actualizar" : "Guardar"}</button>
+            <button onClick={handleCancelar} style={s.btnSecondary}>Cancelar</button>
           </div>
         </div>
       )}
 
-      <div className="flex gap-3 mb-4 items-center">
+      <div style={{ display: "flex", gap: "12px", marginBottom: "1rem", alignItems: "center", flexWrap: "wrap" }}>
         <input
-          className="px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-gray-400 transition-colors w-64"
+          style={{ ...s.input, width: "260px" }}
           placeholder="Buscar por nombre..."
           value={busqueda}
           onChange={(e) => setBusqueda(e.target.value)}
         />
-        <select
-          className="px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-gray-400 transition-colors"
-          value={filtroStock}
-          onChange={(e) => setFiltroStock(e.target.value)}
-        >
+        <select style={s.select} value={filtroStock} onChange={(e) => setFiltroStock(e.target.value)}>
           <option value="todos">Todos</option>
           <option value="constock">Con stock</option>
           <option value="pocostock">Poco stock (≤5)</option>
           <option value="sinstock">Sin stock</option>
         </select>
-        <span className="text-sm text-gray-400">
-          {productosFiltrados.length} resultado{productosFiltrados.length !== 1 ? "s" : ""}
-        </span>
+       <span style={{ ...s.muted, fontSize: "14px", color: "var(--text-secondary)" }}>{productosFiltrados.length} resultado{productosFiltrados.length !== 1 ? "s" : ""}</span>
         {admin && (
-          <div className="ml-auto flex gap-2">
-            <button onClick={() => exportarProductosPDF(productosFiltrados)} className="text-sm px-3 py-2 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors cursor-pointer">
-              Exportar PDF
-            </button>
-            <button onClick={() => exportarProductosExcel(productosFiltrados)} className="text-sm px-3 py-2 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors cursor-pointer">
-              Exportar Excel
-            </button>
+          <div style={{ marginLeft: "auto", display: "flex", gap: "8px" }}>
+            <button onClick={() => exportarProductosPDF(productosFiltrados)} style={s.btnPrimary}>Exportar PDF</button>
+<button onClick={() => exportarProductosExcel(productosFiltrados)} style={s.btnPrimary}>Exportar Excel</button>
           </div>
         )}
       </div>
 
-      <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
-        <table className="w-full">
+      <div style={{ ...s.card, overflow: "hidden" }}>
+        <table style={s.table}>
           <thead>
-            <tr className="border-b border-gray-100">
-              <th className="text-left px-4 py-3 text-xs font-medium text-gray-500 uppercase tracking-wide">ID</th>
-              <th className="text-left px-4 py-3 text-xs font-medium text-gray-500 uppercase tracking-wide">Nombre</th>
-              <th className="text-left px-4 py-3 text-xs font-medium text-gray-500 uppercase tracking-wide">Precio</th>
-              <th className="text-left px-4 py-3 text-xs font-medium text-gray-500 uppercase tracking-wide">Stock</th>
-              {admin && <th className="text-left px-4 py-3 text-xs font-medium text-gray-500 uppercase tracking-wide">Acciones</th>}
+            <tr>
+              <th style={s.th}>ID</th>
+              <th style={s.th}>Nombre</th>
+              <th style={s.th}>Precio</th>
+              <th style={s.th}>Stock</th>
+              {admin && <th style={s.th}>Acciones</th>}
             </tr>
           </thead>
           <tbody>
             {productosFiltrados.length === 0 ? (
               <tr>
-                <td colSpan={admin ? 5 : 4} className="px-4 py-8 text-center text-sm text-gray-400">
+                <td colSpan={admin ? 5 : 4} style={{ ...s.td, textAlign: "center", color: "var(--text-muted)" }}>
                   No se encontraron productos
                 </td>
               </tr>
             ) : (
               productosFiltrados.map((p) => (
-                <tr key={p.id} className="border-b border-gray-50 hover:bg-gray-50 transition-colors">
-                  <td className="px-4 py-3 text-sm text-gray-400">{p.id}</td>
-                  <td className="px-4 py-3 text-sm font-medium text-gray-900">{p.nombre}</td>
-                  <td className="px-4 py-3 text-sm text-gray-700">${parseFloat(p.precio).toLocaleString("es-AR")}</td>
-                  <td className="px-4 py-3">
-                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                      p.stock === 0
-                        ? "bg-red-50 text-red-700"
-                        : p.stock <= 5
-                        ? "bg-yellow-50 text-yellow-700"
-                        : "bg-green-50 text-green-700"
-                    }`}>
-                      {p.stock === 0 ? "Sin stock" : p.stock <= 5 ? `${p.stock} — poco stock` : p.stock}
+                <tr key={p.id} style={{ transition: "background 0.15s" }}
+                  onMouseEnter={(e) => e.currentTarget.style.backgroundColor = "var(--bg-input)"}
+                  onMouseLeave={(e) => e.currentTarget.style.backgroundColor = "transparent"}
+                >
+                  <td style={s.tdMuted}>{p.id}</td>
+                  <td style={{ ...s.td, fontWeight: "500" }}>{p.nombre}</td>
+                  <td style={s.td}>${parseFloat(p.precio).toLocaleString("es-AR")}</td>
+                  <td style={s.td}>
+                    <span style={
+                      p.stock === 0 ? s.badgeDanger :
+                      p.stock <= 5 ? s.badgeWarning :
+                      s.badgeSuccess
+                    }>
+                      {p.stock === 0 ? "Sin stock" : p.stock <= 5 ? `${p.stock} — poco` : p.stock}
                     </span>
                   </td>
                   {admin && (
-                    <td className="px-4 py-3">
-                      <div className="flex gap-2">
-                        <button onClick={() => handleEdit(p)} className="text-xs text-gray-500 hover:text-gray-900 border border-gray-200 px-3 py-1.5 rounded-lg hover:bg-gray-50 transition-colors cursor-pointer">
-                          Editar
-                        </button>
-                        <button onClick={() => handleDelete(p.id)} className="text-xs text-red-500 hover:text-red-700 border border-red-100 px-3 py-1.5 rounded-lg hover:bg-red-50 transition-colors cursor-pointer">
-                          Eliminar
-                        </button>
+                    <td style={s.td}>
+                      <div style={{ display: "flex", gap: "6px" }}>
+                        <button onClick={() => handleEdit(p)} style={s.btnSmall}>Editar</button>
+                        <button onClick={() => handleDelete(p.id)} style={s.btnDanger}>Eliminar</button>
                       </div>
                     </td>
                   )}

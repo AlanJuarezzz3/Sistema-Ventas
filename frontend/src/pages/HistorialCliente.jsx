@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "@tanstack/react-router";
 import api from "../api/axios";
+import { s } from "../styles";
 
 function HistorialCliente() {
   const { id } = useParams({ strict: false });
@@ -22,8 +23,17 @@ function HistorialCliente() {
     fetchHistorial();
   }, [id]);
 
-  if (error) return <p style={errorStyle}>{error}</p>;
-  if (!data) return <p style={{ color: "#555" }}>Cargando...</p>;
+  if (error) return (
+    <div style={{ padding: "2rem" }}>
+      <div style={s.error}>{error}</div>
+    </div>
+  );
+
+  if (!data) return (
+    <div style={{ padding: "2rem", color: "var(--text-muted)", fontSize: "14px" }}>
+      Cargando historial...
+    </div>
+  );
 
   const ventasActivas = data.ventas.filter((v) => v.estado === "activa");
   const totalGastado = ventasActivas.reduce((acc, v) => acc + parseFloat(v.total), 0);
@@ -34,129 +44,127 @@ function HistorialCliente() {
   });
 
   return (
-    <div>
-      <button onClick={() => navigate({ to: "/clientes" })} style={backBtn}>
+    <div style={{ padding: "2rem" }}>
+      <button
+        onClick={() => navigate({ to: "/clientes" })}
+        style={{ ...s.btnSecondary, fontSize: "13px", padding: "6px 14px", marginBottom: "1.5rem", display: "inline-flex", alignItems: "center", gap: "6px" }}
+      >
         ← Volver a clientes
       </button>
 
-      <div style={headerCard}>
-        <div>
-          <h2 style={titleStyle}>{data.cliente.nombre}</h2>
-          <p style={{ fontSize: "13px", color: "#555" }}>Historial de compras</p>
+      <div style={{ ...s.card, padding: "1.25rem", marginBottom: "1.5rem", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "1rem" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+          <div style={{
+            width: "42px", height: "42px", borderRadius: "50%",
+            backgroundColor: "var(--accent-light)",
+            display: "flex", alignItems: "center", justifyContent: "center",
+            fontSize: "16px", fontWeight: "600", color: "var(--accent-text)",
+          }}>
+            {data.cliente.nombre.charAt(0).toUpperCase()}
+          </div>
+          <div>
+            <h2 style={{ ...s.title, fontSize: "18px" }}>{data.cliente.nombre}</h2>
+            <p style={s.subtitle}>Historial de compras</p>
+          </div>
         </div>
-        <div style={statsGrid}>
-          <div style={statCard}>
-            <p style={statLabel}>Compras activas</p>
-            <p style={statValue}>{ventasActivas.length}</p>
-          </div>
-          <div style={statCard}>
-            <p style={statLabel}>Total gastado</p>
-            <p style={statValue}>${totalGastado.toLocaleString("es-AR")}</p>
-          </div>
-          <div style={statCard}>
-            <p style={statLabel}>Total ventas</p>
-            <p style={statValue}>{data.ventas.length}</p>
-          </div>
+        <div style={{ display: "flex", gap: "12px" }}>
+          {[
+            { label: "Compras activas", value: ventasActivas.length },
+            { label: "Total gastado", value: `$${totalGastado.toLocaleString("es-AR")}` },
+            { label: "Total ventas", value: data.ventas.length },
+          ].map((stat) => (
+            <div key={stat.label} style={{
+              ...s.card,
+              padding: "0.75rem 1.25rem",
+              textAlign: "center",
+              backgroundColor: "var(--bg-input)",
+            }}>
+              <p style={{ ...s.muted, marginBottom: "4px" }}>{stat.label}</p>
+              <p style={{ color: "var(--text-primary)", fontSize: "20px", fontWeight: "500" }}>{stat.value}</p>
+            </div>
+          ))}
         </div>
       </div>
 
-      <div style={filtrosStyle}>
-        <select
-          style={selectStyle}
-          value={filtroEstado}
-          onChange={(e) => setFiltroEstado(e.target.value)}
-        >
+      <div style={{ display: "flex", gap: "12px", marginBottom: "1rem", alignItems: "center" }}>
+        <select style={s.select} value={filtroEstado} onChange={(e) => setFiltroEstado(e.target.value)}>
           <option value="todas">Todas</option>
           <option value="activa">Activas</option>
           <option value="anulada">Anuladas</option>
         </select>
-        <span style={resultadosStyle}>
+        <span style={{ ...s.muted, fontSize: "14px" }}>
           {ventasFiltradas.length} resultado{ventasFiltradas.length !== 1 ? "s" : ""}
         </span>
       </div>
 
       {ventasFiltradas.length === 0 ? (
-        <div style={emptyStyle}>No hay ventas para mostrar</div>
+        <div style={{ ...s.card, padding: "3rem", textAlign: "center", color: "var(--text-muted)", fontSize: "14px" }}>
+          No hay ventas para mostrar
+        </div>
       ) : (
-        ventasFiltradas.map((v) => (
-          <div key={v.id} style={{ ...ventaCard, opacity: v.estado === "anulada" ? 0.6 : 1 }}>
-            <div
-              style={ventaHeader}
-              onClick={() => setVentaAbierta(ventaAbierta === v.id ? null : v.id)}
-            >
-              <div style={{ display: "flex", gap: "1.5rem", alignItems: "center" }}>
-                <span style={{ fontSize: "13px", color: "#888" }}>#{v.id}</span>
-                <span style={{ fontSize: "14px" }}>{new Date(v.fecha).toLocaleDateString("es-AR")}</span>
-                <span style={v.estado === "activa" ? activaBadge : anuladaBadge}>
-                  {v.estado}
-                </span>
+        <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+          {ventasFiltradas.map((v) => (
+            <div key={v.id} style={{ ...s.card, overflow: "hidden", opacity: v.estado === "anulada" ? 0.5 : 1 }}>
+              <div
+                style={{
+                  display: "flex", justifyContent: "space-between", alignItems: "center",
+                  padding: "1rem 1.25rem", cursor: "pointer",
+                }}
+                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = "var(--bg-input)"}
+                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = "transparent"}
+                onClick={() => setVentaAbierta(ventaAbierta === v.id ? null : v.id)}
+              >
+                <div style={{ display: "flex", alignItems: "center", gap: "1.5rem" }}>
+                  <span style={s.muted}>#{v.id}</span>
+                  <span style={{ color: "var(--text-primary)", fontSize: "14px" }}>
+                    {new Date(v.fecha).toLocaleDateString("es-AR")}
+                  </span>
+                  <span style={v.estado === "activa" ? s.badgeSuccess : s.badgeMuted}>
+                    {v.estado}
+                  </span>
+                </div>
+                <div style={{ display: "flex", alignItems: "center", gap: "1.5rem" }}>
+                  <span style={{
+                    color: v.estado === "anulada" ? "var(--text-muted)" : "var(--text-primary)",
+                    fontSize: "14px", fontWeight: "500",
+                    textDecoration: v.estado === "anulada" ? "line-through" : "none",
+                  }}>
+                    ${parseFloat(v.total).toLocaleString("es-AR")}
+                  </span>
+                  <span style={s.muted}>{ventaAbierta === v.id ? "▲" : "▼"}</span>
+                </div>
               </div>
-              <div style={{ display: "flex", gap: "1.5rem", alignItems: "center" }}>
-                <span style={{
-                  ...totalBadge,
-                  textDecoration: v.estado === "anulada" ? "line-through" : "none",
-                  background: v.estado === "anulada" ? "#f0f0f0" : "#e6faf0",
-                  color: v.estado === "anulada" ? "#888" : "#0f6e56",
-                }}>
-                  ${parseFloat(v.total).toLocaleString("es-AR")}
-                </span>
-                <span style={{ fontSize: "13px", color: "#888" }}>
-                  {ventaAbierta === v.id ? "▲" : "▼"}
-                </span>
-              </div>
-            </div>
 
-            {ventaAbierta === v.id && (
-              <div style={ventaDetalle}>
-                <table style={tableStyle}>
-                  <thead>
-                    <tr>
-                      <th style={thStyle}>Producto</th>
-                      <th style={thStyle}>Cantidad</th>
-                      <th style={thStyle}>Precio unitario</th>
-                      <th style={thStyle}>Subtotal</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {v.detalle.map((d, index) => (
-                      <tr key={index}>
-                        <td style={tdStyle}>{d.producto}</td>
-                        <td style={tdStyle}>{d.cantidad}</td>
-                        <td style={tdStyle}>${parseFloat(d.precio_unitario).toLocaleString("es-AR")}</td>
-                        <td style={tdStyle}>${parseFloat(d.subtotal).toLocaleString("es-AR")}</td>
+              {ventaAbierta === v.id && (
+                <div style={{ borderTop: "1px solid var(--border)", padding: "1rem 1.25rem" }}>
+                  <table style={s.table}>
+                    <thead>
+                      <tr>
+                        <th style={s.th}>Producto</th>
+                        <th style={s.th}>Cantidad</th>
+                        <th style={s.th}>Precio unitario</th>
+                        <th style={s.th}>Subtotal</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
-          </div>
-        ))
+                    </thead>
+                    <tbody>
+                      {v.detalle.map((d, index) => (
+                        <tr key={index}>
+                          <td style={{ ...s.td, fontWeight: "500" }}>{d.producto}</td>
+                          <td style={s.td}>{d.cantidad}</td>
+                          <td style={s.td}>${parseFloat(d.precio_unitario).toLocaleString("es-AR")}</td>
+                          <td style={s.td}>${parseFloat(d.subtotal).toLocaleString("es-AR")}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
       )}
     </div>
   );
 }
-
-const titleStyle = { fontSize: "20px", fontWeight: "500" };
-const errorStyle = { color: "#c0392b", fontSize: "13px" };
-const backBtn = { marginBottom: "1.5rem", padding: "6px 14px", fontSize: "13px", border: "0.5px solid #ccc", borderRadius: "8px", cursor: "pointer", background: "transparent", display: "block" };
-const headerCard = { background: "#fff", border: "0.5px solid #ddd", borderRadius: "12px", padding: "1.25rem", marginBottom: "1.5rem", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "1rem" };
-const statsGrid = { display: "flex", gap: "12px" };
-const statCard = { background: "#f9f9f9", border: "0.5px solid #eee", borderRadius: "8px", padding: "0.75rem 1.25rem", textAlign: "center" };
-const statLabel = { fontSize: "12px", color: "#888", marginBottom: "4px" };
-const statValue = { fontSize: "20px", fontWeight: "500" };
-const filtrosStyle = { display: "flex", gap: "12px", marginBottom: "1.5rem", alignItems: "center" };
-const selectStyle = { padding: "8px 10px", fontSize: "14px", border: "0.5px solid #ccc", borderRadius: "8px" };
-const resultadosStyle = { fontSize: "13px", color: "#888" };
-const emptyStyle = { textAlign: "center", color: "#888", padding: "3rem", background: "#fff", border: "0.5px solid #ddd", borderRadius: "12px" };
-const ventaCard = { background: "#fff", border: "0.5px solid #ddd", borderRadius: "12px", marginBottom: "12px", overflow: "hidden" };
-const ventaHeader = { display: "flex", justifyContent: "space-between", alignItems: "center", padding: "1rem 1.25rem", cursor: "pointer" };
-const ventaDetalle = { borderTop: "0.5px solid #eee", padding: "1rem 1.25rem" };
-const totalBadge = { padding: "2px 10px", borderRadius: "6px", fontSize: "13px", fontWeight: "500" };
-const activaBadge = { padding: "2px 10px", borderRadius: "6px", fontSize: "12px", background: "#e6faf0", color: "#0f6e56", fontWeight: "500" };
-const anuladaBadge = { padding: "2px 10px", borderRadius: "6px", fontSize: "12px", background: "#f0f0f0", color: "#888", fontWeight: "500" };
-const tableStyle = { width: "100%", borderCollapse: "collapse" };
-const thStyle = { textAlign: "left", padding: "8px 12px", fontSize: "13px", color: "#555", borderBottom: "0.5px solid #ddd" };
-const tdStyle = { padding: "8px 12px", fontSize: "14px", borderBottom: "0.5px solid #eee" };
 
 export default HistorialCliente;
