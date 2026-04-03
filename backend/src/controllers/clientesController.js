@@ -87,10 +87,59 @@ const deleteCliente = (req, res) => {
   );
 };
 
+const getHistorialCliente = (req, res) => {
+  const { id } = req.params;
+
+  db.query("SELECT id, nombre FROM clientes WHERE id = ?", [id], (err, clienteResult) => {
+    if (err) {
+      console.error("Error al buscar cliente:", err);
+      return res.status(500).json({ mensaje: "Error interno del servidor" });
+    }
+    if (clienteResult.length === 0) {
+      return res.status(404).json({ mensaje: "Cliente no encontrado" });
+    }
+
+    const query = `
+      SELECT 
+        v.id, v.fecha, v.total,
+        JSON_ARRAYAGG(
+          JSON_OBJECT(
+            'producto', p.nombre,
+            'cantidad', dv.cantidad,
+            'precio_unitario', dv.precio_unitario,
+            'subtotal', dv.cantidad * dv.precio_unitario
+          )
+        ) AS detalle
+      FROM ventas v
+      JOIN detalle_ventas dv ON v.id = dv.venta_id
+      JOIN productos p ON dv.producto_id = p.id
+      WHERE v.cliente_id = ?
+      GROUP BY v.id, v.fecha, v.total
+      ORDER BY v.fecha DESC
+    `;
+
+    db.query(query, [id], (err, ventasResult) => {
+      if (err) {
+        console.error("Error al obtener historial:", err);
+        return res.status(500).json({ mensaje: "Error interno del servidor" });
+      }
+
+      res.json({
+        cliente: clienteResult[0],
+        ventas: ventasResult.map((v) => ({
+          ...v,
+          detalle: typeof v.detalle === "string" ? JSON.parse(v.detalle) : v.detalle
+        }))
+      });
+    });
+  });
+};
+
 module.exports = {
   getClientes,
   getClienteById,
   createCliente,
   updateCliente,
-  deleteCliente
+  deleteCliente,
+  getHistorialCliente
 };

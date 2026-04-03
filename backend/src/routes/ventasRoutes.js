@@ -8,6 +8,6 @@ const verificarAdmin = require("../middlewares/verificarAdmin");
 router.get("/", verificarToken, ventasController.getVentas);
 router.get("/:id", verificarToken, ventasController.getVentaById);
 router.post("/", verificarToken, ventasController.createVenta);
-router.delete("/:id", verificarToken, verificarAdmin, ventasController.deleteVenta);
+router.put("/:id/anular", verificarToken, verificarAdmin, ventasController.anularVenta);
 
 module.exports = router;

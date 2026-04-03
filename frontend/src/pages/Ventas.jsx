@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import api from "../api/axios";
 import { isAdmin } from "../api/auth";
+import { exportarVentasPDF, exportarVentasExcel } from "../api/exportUtils";
 
 function Ventas() {
   const [ventas, setVentas] = useState([]);
@@ -9,6 +10,8 @@ function Ventas() {
   const [clienteId, setClienteId] = useState("");
   const [items, setItems] = useState([{ producto_id: "", cantidad: "", precio_unitario: "" }]);
   const [error, setError] = useState("");
+  const [filtroEstado, setFiltroEstado] = useState("todas");
+  const [showForm, setShowForm] = useState(false);
   const admin = isAdmin();
 
   const fetchData = async () => {
@@ -49,6 +52,11 @@ function Ventas() {
     setItems(items.filter((_, i) => i !== index));
   };
 
+  const getStockDisponible = (producto_id) => {
+    const prod = productos.find((p) => p.id === parseInt(producto_id));
+    return prod ? prod.stock : null;
+  };
+
   const handleSubmit = async () => {
     if (!clienteId) return setError("Seleccioná un cliente");
     if (items.some((i) => !i.producto_id || !i.cantidad || !i.precio_unitario)) {
@@ -66,117 +74,236 @@ function Ventas() {
       setClienteId("");
       setItems([{ producto_id: "", cantidad: "", precio_unitario: "" }]);
       setError("");
+      setShowForm(false);
       fetchData();
-    } catch {
-      setError("Error al crear venta");
+    } catch (err) {
+      setError(err.response?.data?.mensaje || "Error al crear venta");
     }
   };
 
-  const handleDelete = async (id) => {
+  const handleAnular = async (id) => {
     try {
-      await api.delete(`/ventas/${id}`);
+      await api.put(`/ventas/${id}/anular`);
       fetchData();
-    } catch {
-      setError("Error al eliminar venta");
+    } catch (err) {
+      setError(err.response?.data?.mensaje || "Error al anular venta");
     }
   };
+
+  const calcularTotal = () => {
+    return items.reduce((acc, i) => {
+      const cantidad = parseFloat(i.cantidad) || 0;
+      const precio = parseFloat(i.precio_unitario) || 0;
+      return acc + cantidad * precio;
+    }, 0).toFixed(2);
+  };
+
+  const ventasFiltradas = ventas.filter((v) => {
+    if (filtroEstado === "todas") return true;
+    return v.estado === filtroEstado;
+  });
 
   return (
     <div>
-      <h2 style={titleStyle}>Ventas</h2>
-
-      {error && <p style={errorStyle}>{error}</p>}
-
-      <div style={cardStyle}>
-        <h3 style={subtitleStyle}>Nueva venta</h3>
-
-        <label style={labelStyle}>Cliente</label>
-        <select style={selectStyle} value={clienteId} onChange={(e) => setClienteId(e.target.value)}>
-          <option value="">Seleccioná un cliente</option>
-          {clientes.map((c) => (
-            <option key={c.id} value={c.id}>{c.nombre}</option>
-          ))}
-        </select>
-
-        <label style={{ ...labelStyle, marginTop: "1rem" }}>Productos</label>
-        {items.map((item, index) => (
-          <div key={index} style={itemRowStyle}>
-            <select
-              style={{ ...selectStyle, flex: 2, marginBottom: 0 }}
-              value={item.producto_id}
-              onChange={(e) => handleItemChange(index, "producto_id", e.target.value)}
-            >
-              <option value="">Seleccioná producto</option>
-              {productos.map((p) => (
-                <option key={p.id} value={p.id}>{p.nombre}</option>
-              ))}
-            </select>
-            <input
-              style={{ ...inputStyle, flex: 1 }}
-              placeholder="Cantidad"
-              value={item.cantidad}
-              onChange={(e) => handleItemChange(index, "cantidad", e.target.value)}
-            />
-            <input
-              style={{ ...inputStyle, flex: 1 }}
-              placeholder="Precio unitario"
-              value={item.precio_unitario}
-              onChange={(e) => handleItemChange(index, "precio_unitario", e.target.value)}
-            />
-            {items.length > 1 && (
-              <button onClick={() => removeItem(index)} style={removeBtnStyle}>✕</button>
-            )}
-          </div>
-        ))}
-
-        <button onClick={addItem} style={addItemBtn}>+ Agregar producto</button>
-        <button onClick={handleSubmit} style={btnStyle}>Crear venta</button>
+      <div className="flex items-center justify-between mb-6">
+        <div>
+          <h2 className="text-xl font-medium text-gray-900">Ventas</h2>
+          <p className="text-sm text-gray-500 mt-0.5">{ventas.length} ventas en total</p>
+        </div>
+        {!showForm && (
+          <button
+            onClick={() => setShowForm(true)}
+            className="bg-gray-900 text-white text-sm px-4 py-2 rounded-lg hover:bg-gray-700 transition-colors cursor-pointer"
+          >
+            + Nueva venta
+          </button>
+        )}
       </div>
 
-      <table style={tableStyle}>
-        <thead>
-          <tr>
-            <th style={thStyle}>ID</th>
-            <th style={thStyle}>Cliente</th>
-            <th style={thStyle}>Total</th>
-            <th style={thStyle}>Fecha</th>
-            {admin && <th style={thStyle}>Acciones</th>}
-          </tr>
-        </thead>
-        <tbody>
-          {ventas.map((v) => (
-            <tr key={v.id}>
-              <td style={tdStyle}>{v.id}</td>
-              <td style={tdStyle}>{v.cliente_nombre}</td>
-              <td style={tdStyle}>${v.total}</td>
-              <td style={tdStyle}>{new Date(v.fecha).toLocaleDateString("es-AR")}</td>
-              {admin && (
-                <td style={tdStyle}>
-                  <button onClick={() => handleDelete(v.id)} style={deleteBtn}>Eliminar</button>
-                </td>
-              )}
+      {error && (
+        <div className="bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg px-4 py-3 mb-4">
+          {error}
+        </div>
+      )}
+
+      {showForm && (
+        <div className="bg-white border border-gray-200 rounded-xl p-5 mb-6">
+          <h3 className="text-sm font-medium text-gray-900 mb-4">Nueva venta</h3>
+
+          <div className="mb-4">
+            <label className="block text-xs text-gray-500 mb-1.5">Cliente</label>
+            <select
+              className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-gray-400 transition-colors"
+              value={clienteId}
+              onChange={(e) => setClienteId(e.target.value)}
+            >
+              <option value="">Seleccioná un cliente</option>
+              {clientes.map((c) => (
+                <option key={c.id} value={c.id}>{c.nombre}</option>
+              ))}
+            </select>
+          </div>
+
+          <label className="block text-xs text-gray-500 mb-2">Productos</label>
+          {items.map((item, index) => {
+            const stock = getStockDisponible(item.producto_id);
+            return (
+              <div key={index} className="mb-3">
+                <div className="flex gap-2 items-center">
+                  <select
+                    className="flex-2 px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-gray-400 transition-colors"
+                    style={{ flex: 2 }}
+                    value={item.producto_id}
+                    onChange={(e) => handleItemChange(index, "producto_id", e.target.value)}
+                  >
+                    <option value="">Seleccioná producto</option>
+                    {productos.map((p) => (
+                      <option key={p.id} value={p.id}>{p.nombre} — ${p.precio}</option>
+                    ))}
+                  </select>
+                  <input
+                    className="px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-gray-400 transition-colors"
+                    style={{ flex: 1 }}
+                    placeholder="Cantidad"
+                    value={item.cantidad}
+                    onChange={(e) => handleItemChange(index, "cantidad", e.target.value)}
+                  />
+                  <input
+                    className="px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-gray-400 transition-colors"
+                    style={{ flex: 1 }}
+                    placeholder="Precio unitario"
+                    value={item.precio_unitario}
+                    onChange={(e) => handleItemChange(index, "precio_unitario", e.target.value)}
+                  />
+                  {items.length > 1 && (
+                    <button
+                      onClick={() => removeItem(index)}
+                      className="text-red-400 hover:text-red-600 border border-red-100 px-3 py-2 rounded-lg hover:bg-red-50 transition-colors cursor-pointer text-sm"
+                    >
+                      ✕
+                    </button>
+                  )}
+                </div>
+                {item.producto_id && stock !== null && (
+                  <p className={`text-xs mt-1 ml-1 ${stock === 0 ? "text-red-500" : stock <= 5 ? "text-yellow-600" : "text-green-600"}`}>
+                    Stock disponible: {stock}
+                  </p>
+                )}
+              </div>
+            );
+          })}
+
+          <button
+            onClick={addItem}
+            className="text-sm text-gray-500 hover:text-gray-900 border border-gray-200 px-3 py-1.5 rounded-lg hover:bg-gray-50 transition-colors cursor-pointer mb-4"
+          >
+            + Agregar producto
+          </button>
+
+          <div className="flex items-center justify-between pt-4 border-t border-gray-100">
+            <p className="text-sm font-medium text-gray-900">Total: ${calcularTotal()}</p>
+            <div className="flex gap-2">
+              <button
+                onClick={() => { setShowForm(false); setError(""); setClienteId(""); setItems([{ producto_id: "", cantidad: "", precio_unitario: "" }]); }}
+                className="text-sm px-4 py-2 rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors cursor-pointer"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={handleSubmit}
+                className="bg-gray-900 text-white text-sm px-4 py-2 rounded-lg hover:bg-gray-700 transition-colors cursor-pointer"
+              >
+                Crear venta
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <div className="flex gap-3 mb-4 items-center">
+        <select
+          className="px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-gray-400 transition-colors"
+          value={filtroEstado}
+          onChange={(e) => setFiltroEstado(e.target.value)}
+        >
+          <option value="todas">Todas</option>
+          <option value="activa">Activas</option>
+          <option value="anulada">Anuladas</option>
+        </select>
+        <span className="text-sm text-gray-400">
+          {ventasFiltradas.length} resultado{ventasFiltradas.length !== 1 ? "s" : ""}
+        </span>
+        {admin && (
+          <div className="ml-auto flex gap-2">
+            <button onClick={() => exportarVentasPDF(ventasFiltradas)} className="text-sm px-3 py-2 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors cursor-pointer">
+              Exportar PDF
+            </button>
+            <button onClick={() => exportarVentasExcel(ventasFiltradas)} className="text-sm px-3 py-2 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors cursor-pointer">
+              Exportar Excel
+            </button>
+          </div>
+        )}
+      </div>
+
+      <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
+        <table className="w-full">
+          <thead>
+            <tr className="border-b border-gray-100">
+              <th className="text-left px-4 py-3 text-xs font-medium text-gray-500 uppercase tracking-wide">ID</th>
+              <th className="text-left px-4 py-3 text-xs font-medium text-gray-500 uppercase tracking-wide">Cliente</th>
+              <th className="text-left px-4 py-3 text-xs font-medium text-gray-500 uppercase tracking-wide">Total</th>
+              <th className="text-left px-4 py-3 text-xs font-medium text-gray-500 uppercase tracking-wide">Estado</th>
+              <th className="text-left px-4 py-3 text-xs font-medium text-gray-500 uppercase tracking-wide">Fecha</th>
+              {admin && <th className="text-left px-4 py-3 text-xs font-medium text-gray-500 uppercase tracking-wide">Acciones</th>}
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {ventasFiltradas.length === 0 ? (
+              <tr>
+                <td colSpan={admin ? 6 : 5} className="px-4 py-8 text-center text-sm text-gray-400">
+                  No se encontraron ventas
+                </td>
+              </tr>
+            ) : (
+              ventasFiltradas.map((v) => (
+                <tr key={v.id} className={`border-b border-gray-50 transition-colors ${v.estado === "anulada" ? "opacity-50" : "hover:bg-gray-50"}`}>
+                  <td className="px-4 py-3 text-sm text-gray-400">{v.id}</td>
+                  <td className="px-4 py-3 text-sm font-medium text-gray-900">{v.cliente_nombre}</td>
+                  <td className={`px-4 py-3 text-sm text-gray-700 ${v.estado === "anulada" ? "line-through" : ""}`}>
+                    ${parseFloat(v.total).toLocaleString("es-AR")}
+                  </td>
+                  <td className="px-4 py-3">
+                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                      v.estado === "activa"
+                        ? "bg-green-50 text-green-700"
+                        : "bg-gray-100 text-gray-500"
+                    }`}>
+                      {v.estado}
+                    </span>
+                  </td>
+                  <td className="px-4 py-3 text-sm text-gray-600">
+                    {new Date(v.fecha).toLocaleDateString("es-AR")}
+                  </td>
+                  {admin && (
+                    <td className="px-4 py-3">
+                      {v.estado === "activa" && (
+                        <button
+                          onClick={() => handleAnular(v.id)}
+                          className="text-xs text-red-500 hover:text-red-700 border border-red-100 px-3 py-1.5 rounded-lg hover:bg-red-50 transition-colors cursor-pointer"
+                        >
+                          Anular
+                        </button>
+                      )}
+                    </td>
+                  )}
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }
-
-const titleStyle = { fontSize: "20px", fontWeight: "500", marginBottom: "1.5rem" };
-const subtitleStyle = { fontSize: "15px", fontWeight: "500", marginBottom: "1rem" };
-const errorStyle = { color: "#c0392b", fontSize: "13px", marginBottom: "1rem" };
-const cardStyle = { background: "#fff", border: "0.5px solid #ddd", borderRadius: "12px", padding: "1.25rem", marginBottom: "2rem" };
-const labelStyle = { display: "block", fontSize: "13px", color: "#555", marginBottom: "6px" };
-const selectStyle = { padding: "8px 10px", fontSize: "14px", border: "0.5px solid #ccc", borderRadius: "8px", width: "100%", marginBottom: "8px" };
-const inputStyle = { padding: "8px 10px", fontSize: "14px", border: "0.5px solid #ccc", borderRadius: "8px" };
-const itemRowStyle = { display: "flex", gap: "8px", marginBottom: "8px", alignItems: "center" };
-const removeBtnStyle = { padding: "6px 10px", fontSize: "13px", border: "0.5px solid #ffb3b3", borderRadius: "6px", cursor: "pointer", background: "transparent", color: "#c0392b" };
-const addItemBtn = { display: "block", marginBottom: "1rem", padding: "6px 14px", fontSize: "13px", border: "0.5px solid #ccc", borderRadius: "8px", cursor: "pointer", background: "transparent" };
-const btnStyle = { padding: "8px 16px", fontSize: "14px", border: "0.5px solid #ccc", borderRadius: "8px", background: "#1e1e2e", color: "#fff", cursor: "pointer" };
-const tableStyle = { width: "100%", borderCollapse: "collapse" };
-const thStyle = { textAlign: "left", padding: "10px 12px", fontSize: "13px", color: "#555", borderBottom: "0.5px solid #ddd" };
-const tdStyle = { padding: "10px 12px", fontSize: "14px", borderBottom: "0.5px solid #eee" };
-const deleteBtn = { padding: "4px 12px", fontSize: "13px", border: "0.5px solid #ffb3b3", borderRadius: "6px", cursor: "pointer", background: "transparent", color: "#c0392b" };
 
 export default Ventas;

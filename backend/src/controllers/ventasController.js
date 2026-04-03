@@ -2,7 +2,7 @@ const db = require("../config/db");
 
 const getVentas = (req, res) => {
   const query = `
-    SELECT v.id, v.fecha, v.total,
+    SELECT v.id, v.fecha, v.total, v.estado,
            c.nombre AS cliente_nombre, c.email AS cliente_email
     FROM ventas v
     JOIN clientes c ON v.cliente_id = c.id
@@ -21,7 +21,7 @@ const getVentaById = (req, res) => {
   const { id } = req.params;
 
   const queryVenta = `
-    SELECT v.id, v.fecha, v.total,
+    SELECT v.id, v.fecha, v.total, v.estado,
            c.nombre AS cliente_nombre, c.email AS cliente_email
     FROM ventas v
     JOIN clientes c ON v.cliente_id = c.id
@@ -163,57 +163,64 @@ const createVenta = (req, res) => {
   });
 };
 
-const deleteVenta = (req, res) => {
+const anularVenta = (req, res) => {
   const { id } = req.params;
 
-  const queryDetalle = `
-    SELECT producto_id, cantidad FROM detalle_ventas WHERE venta_id = ?
-  `;
-
-  db.query(queryDetalle, [id], (err, detalleResult) => {
+  db.query("SELECT * FROM ventas WHERE id = ?", [id], (err, ventaResult) => {
     if (err) {
-      console.error("Error al obtener detalle:", err);
+      console.error("Error al buscar venta:", err);
       return res.status(500).json({ mensaje: "Error interno del servidor" });
     }
+    if (ventaResult.length === 0) {
+      return res.status(404).json({ mensaje: "Venta no encontrada" });
+    }
+    if (ventaResult[0].estado === "anulada") {
+      return res.status(400).json({ mensaje: "La venta ya está anulada" });
+    }
 
-    db.query("DELETE FROM detalle_ventas WHERE venta_id = ?", [id], (err) => {
-      if (err) {
-        console.error("Error al eliminar detalle:", err);
-        return res.status(500).json({ mensaje: "Error interno del servidor" });
-      }
-
-      db.query("DELETE FROM ventas WHERE id = ?", [id], (err, result) => {
+    db.query(
+      "SELECT producto_id, cantidad FROM detalle_ventas WHERE venta_id = ?",
+      [id],
+      (err, detalleResult) => {
         if (err) {
-          console.error("Error al eliminar venta:", err);
+          console.error("Error al obtener detalle:", err);
           return res.status(500).json({ mensaje: "Error interno del servidor" });
         }
-        if (result.affectedRows === 0) {
-          return res.status(404).json({ mensaje: "Venta no encontrada" });
-        }
 
-        const restorePromises = detalleResult.map((d) => {
-          return new Promise((resolve, reject) => {
-            db.query(
-              "UPDATE productos SET stock = stock + ? WHERE id = ?",
-              [d.cantidad, d.producto_id],
-              (err) => {
-                if (err) reject(err);
-                else resolve();
-              }
-            );
-          });
-        });
+        db.query(
+          "UPDATE ventas SET estado = 'anulada' WHERE id = ?",
+          [id],
+          (err) => {
+            if (err) {
+              console.error("Error al anular venta:", err);
+              return res.status(500).json({ mensaje: "Error interno del servidor" });
+            }
 
-        Promise.all(restorePromises)
-          .then(() => {
-            res.json({ mensaje: "Venta eliminada y stock restaurado" });
-          })
-          .catch((err) => {
-            console.error("Error al restaurar stock:", err);
-            res.status(500).json({ mensaje: "Error interno del servidor" });
-          });
-      });
-    });
+            const restorePromises = detalleResult.map((d) => {
+              return new Promise((resolve, reject) => {
+                db.query(
+                  "UPDATE productos SET stock = stock + ? WHERE id = ?",
+                  [d.cantidad, d.producto_id],
+                  (err) => {
+                    if (err) reject(err);
+                    else resolve();
+                  }
+                );
+              });
+            });
+
+            Promise.all(restorePromises)
+              .then(() => {
+                res.json({ mensaje: "Venta anulada y stock restaurado" });
+              })
+              .catch((err) => {
+                console.error("Error al restaurar stock:", err);
+                res.status(500).json({ mensaje: "Error interno del servidor" });
+              });
+          }
+        );
+      }
+    );
   });
 };
 
@@ -221,5 +228,5 @@ module.exports = {
   getVentas,
   getVentaById,
   createVenta,
-  deleteVenta
+  anularVenta
 };

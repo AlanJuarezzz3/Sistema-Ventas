@@ -1,15 +1,20 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "@tanstack/react-router";
 import api from "../api/axios";
 import { isAdmin } from "../api/auth";
+import { exportarClientesPDF, exportarClientesExcel } from "../api/exportUtils";
 
 function Clientes() {
   const [clientes, setClientes] = useState([]);
+  const [busqueda, setBusqueda] = useState("");
   const [nombre, setNombre] = useState("");
   const [email, setEmail] = useState("");
   const [telefono, setTelefono] = useState("");
   const [editId, setEditId] = useState(null);
   const [error, setError] = useState("");
+  const [showForm, setShowForm] = useState(false);
   const admin = isAdmin();
+  const navigate = useNavigate();
 
   const fetchClientes = async () => {
     try {
@@ -38,6 +43,7 @@ function Clientes() {
       setTelefono("");
       setEditId(null);
       setError("");
+      setShowForm(false);
       fetchClientes();
     } catch {
       setError("Error al guardar cliente");
@@ -49,6 +55,7 @@ function Clientes() {
     setNombre(cliente.nombre);
     setEmail(cliente.email || "");
     setTelefono(cliente.telefono || "");
+    setShowForm(true);
   };
 
   const handleDelete = async (id) => {
@@ -60,82 +67,167 @@ function Clientes() {
     }
   };
 
+  const handleCancelar = () => {
+    setEditId(null);
+    setNombre("");
+    setEmail("");
+    setTelefono("");
+    setError("");
+    setShowForm(false);
+  };
+
+  const clientesFiltrados = clientes.filter((c) => {
+    const texto = busqueda.toLowerCase();
+    return (
+      c.nombre.toLowerCase().includes(texto) ||
+      (c.email && c.email.toLowerCase().includes(texto)) ||
+      (c.telefono && c.telefono.includes(texto))
+    );
+  });
+
   return (
     <div>
-      <h2 style={titleStyle}>Clientes</h2>
-
-      {error && <p style={errorStyle}>{error}</p>}
-
-      <div style={formStyle}>
-        <input
-          style={inputStyle}
-          placeholder="Nombre"
-          value={nombre}
-          onChange={(e) => setNombre(e.target.value)}
-        />
-        <input
-          style={inputStyle}
-          placeholder="Email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-        />
-        <input
-          style={inputStyle}
-          placeholder="Teléfono"
-          value={telefono}
-          onChange={(e) => setTelefono(e.target.value)}
-        />
-        <button onClick={handleSubmit} style={btnStyle}>
-          {editId ? "Actualizar" : "Agregar"}
-        </button>
-        {editId && (
-          <button onClick={() => { setEditId(null); setNombre(""); setEmail(""); setTelefono(""); }} style={cancelStyle}>
-            Cancelar
+      <div className="flex items-center justify-between mb-6">
+        <div>
+          <h2 className="text-xl font-medium text-gray-900">Clientes</h2>
+          <p className="text-sm text-gray-500 mt-0.5">{clientes.length} clientes en total</p>
+        </div>
+        {!showForm && (
+          <button
+            onClick={() => setShowForm(true)}
+            className="bg-gray-900 text-white text-sm px-4 py-2 rounded-lg hover:bg-gray-700 transition-colors cursor-pointer"
+          >
+            + Agregar cliente
           </button>
         )}
       </div>
 
-      <table style={tableStyle}>
-        <thead>
-          <tr>
-            <th style={thStyle}>ID</th>
-            <th style={thStyle}>Nombre</th>
-            <th style={thStyle}>Email</th>
-            <th style={thStyle}>Teléfono</th>
-            {admin && <th style={thStyle}>Acciones</th>}
-          </tr>
-        </thead>
-        <tbody>
-          {clientes.map((c) => (
-            <tr key={c.id}>
-              <td style={tdStyle}>{c.id}</td>
-              <td style={tdStyle}>{c.nombre}</td>
-              <td style={tdStyle}>{c.email || "—"}</td>
-              <td style={tdStyle}>{c.telefono || "—"}</td>
-              {admin && (
-                <td style={tdStyle}>
-                  <button onClick={() => handleEdit(c)} style={editBtn}>Editar</button>
-                  <button onClick={() => handleDelete(c.id)} style={deleteBtn}>Eliminar</button>
-                </td>
-              )}
+      {error && (
+        <div className="bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg px-4 py-3 mb-4">
+          {error}
+        </div>
+      )}
+
+      {showForm && (
+        <div className="bg-white border border-gray-200 rounded-xl p-5 mb-6">
+          <h3 className="text-sm font-medium text-gray-900 mb-4">
+            {editId ? "Editar cliente" : "Nuevo cliente"}
+          </h3>
+          <div className="grid grid-cols-3 gap-3 mb-4">
+            <div>
+              <label className="block text-xs text-gray-500 mb-1.5">Nombre</label>
+              <input
+                className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-gray-400 transition-colors"
+                placeholder="Juan Pérez"
+                value={nombre}
+                onChange={(e) => setNombre(e.target.value)}
+              />
+            </div>
+            <div>
+              <label className="block text-xs text-gray-500 mb-1.5">Email</label>
+              <input
+                className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-gray-400 transition-colors"
+                placeholder="juan@email.com"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+              />
+            </div>
+            <div>
+              <label className="block text-xs text-gray-500 mb-1.5">Teléfono</label>
+              <input
+                className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-gray-400 transition-colors"
+                placeholder="1134567890"
+                value={telefono}
+                onChange={(e) => setTelefono(e.target.value)}
+              />
+            </div>
+          </div>
+          <div className="flex gap-2">
+            <button onClick={handleSubmit} className="bg-gray-900 text-white text-sm px-4 py-2 rounded-lg hover:bg-gray-700 transition-colors cursor-pointer">
+              {editId ? "Actualizar" : "Guardar"}
+            </button>
+            <button onClick={handleCancelar} className="text-sm px-4 py-2 rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors cursor-pointer">
+              Cancelar
+            </button>
+          </div>
+        </div>
+      )}
+
+      <div className="flex gap-3 mb-4 items-center">
+        <input
+          className="px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-gray-400 transition-colors w-72"
+          placeholder="Buscar por nombre, email o teléfono..."
+          value={busqueda}
+          onChange={(e) => setBusqueda(e.target.value)}
+        />
+        <span className="text-sm text-gray-400">
+          {clientesFiltrados.length} resultado{clientesFiltrados.length !== 1 ? "s" : ""}
+        </span>
+        {admin && (
+          <div className="ml-auto flex gap-2">
+            <button onClick={() => exportarClientesPDF(clientesFiltrados)} className="text-sm px-3 py-2 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors cursor-pointer">
+              Exportar PDF
+            </button>
+            <button onClick={() => exportarClientesExcel(clientesFiltrados)} className="text-sm px-3 py-2 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors cursor-pointer">
+              Exportar Excel
+            </button>
+          </div>
+        )}
+      </div>
+
+      <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
+        <table className="w-full">
+          <thead>
+            <tr className="border-b border-gray-100">
+              <th className="text-left px-4 py-3 text-xs font-medium text-gray-500 uppercase tracking-wide">ID</th>
+              <th className="text-left px-4 py-3 text-xs font-medium text-gray-500 uppercase tracking-wide">Nombre</th>
+              <th className="text-left px-4 py-3 text-xs font-medium text-gray-500 uppercase tracking-wide">Email</th>
+              <th className="text-left px-4 py-3 text-xs font-medium text-gray-500 uppercase tracking-wide">Teléfono</th>
+              <th className="text-left px-4 py-3 text-xs font-medium text-gray-500 uppercase tracking-wide">Acciones</th>
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {clientesFiltrados.length === 0 ? (
+              <tr>
+                <td colSpan={5} className="px-4 py-8 text-center text-sm text-gray-400">
+                  No se encontraron clientes
+                </td>
+              </tr>
+            ) : (
+              clientesFiltrados.map((c) => (
+                <tr key={c.id} className="border-b border-gray-50 hover:bg-gray-50 transition-colors">
+                  <td className="px-4 py-3 text-sm text-gray-400">{c.id}</td>
+                  <td className="px-4 py-3 text-sm font-medium text-gray-900">{c.nombre}</td>
+                  <td className="px-4 py-3 text-sm text-gray-600">{c.email || "—"}</td>
+                  <td className="px-4 py-3 text-sm text-gray-600">{c.telefono || "—"}</td>
+                  <td className="px-4 py-3">
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => navigate({ to: `/clientes/${c.id}/historial` })}
+                        className="text-xs text-blue-600 hover:text-blue-800 border border-blue-100 px-3 py-1.5 rounded-lg hover:bg-blue-50 transition-colors cursor-pointer"
+                      >
+                        Historial
+                      </button>
+                      {admin && (
+                        <>
+                          <button onClick={() => handleEdit(c)} className="text-xs text-gray-500 hover:text-gray-900 border border-gray-200 px-3 py-1.5 rounded-lg hover:bg-gray-50 transition-colors cursor-pointer">
+                            Editar
+                          </button>
+                          <button onClick={() => handleDelete(c.id)} className="text-xs text-red-500 hover:text-red-700 border border-red-100 px-3 py-1.5 rounded-lg hover:bg-red-50 transition-colors cursor-pointer">
+                            Eliminar
+                          </button>
+                        </>
+                      )}
+                    </div>
+                  </td>
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }
-
-const titleStyle = { fontSize: "20px", fontWeight: "500", marginBottom: "1.5rem" };
-const errorStyle = { color: "#c0392b", fontSize: "13px", marginBottom: "1rem" };
-const formStyle = { display: "flex", gap: "12px", marginBottom: "1.5rem", flexWrap: "wrap" };
-const inputStyle = { padding: "8px 10px", fontSize: "14px", border: "0.5px solid #ccc", borderRadius: "8px", minWidth: "180px" };
-const btnStyle = { padding: "8px 16px", fontSize: "14px", border: "0.5px solid #ccc", borderRadius: "8px", background: "#1e1e2e", color: "#fff", cursor: "pointer" };
-const cancelStyle = { padding: "8px 16px", fontSize: "14px", border: "0.5px solid #ccc", borderRadius: "8px", background: "transparent", cursor: "pointer" };
-const tableStyle = { width: "100%", borderCollapse: "collapse" };
-const thStyle = { textAlign: "left", padding: "10px 12px", fontSize: "13px", color: "#555", borderBottom: "0.5px solid #ddd" };
-const tdStyle = { padding: "10px 12px", fontSize: "14px", borderBottom: "0.5px solid #eee" };
-const editBtn = { marginRight: "8px", padding: "4px 12px", fontSize: "13px", border: "0.5px solid #ccc", borderRadius: "6px", cursor: "pointer", background: "transparent" };
-const deleteBtn = { padding: "4px 12px", fontSize: "13px", border: "0.5px solid #ffb3b3", borderRadius: "6px", cursor: "pointer", background: "transparent", color: "#c0392b" };
 
 export default Clientes;

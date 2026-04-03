@@ -1,8 +1,10 @@
-import { useNavigate } from "@tanstack/react-router";
+import { useNavigate, useRouterState } from "@tanstack/react-router";
 import { isAdmin } from "../api/auth";
 
 function Navbar() {
   const navigate = useNavigate();
+  const routerState = useRouterState();
+  const currentPath = routerState.location.pathname;
   const admin = isAdmin();
 
   const handleLogout = () => {
@@ -10,35 +12,49 @@ function Navbar() {
     navigate({ to: "/" });
   };
 
+  const navLinks = [
+    ...(admin ? [{ to: "/dashboard", label: "Dashboard" }] : []),
+    { to: "/productos", label: "Productos" },
+    { to: "/clientes", label: "Clientes" },
+    { to: "/ventas", label: "Ventas" },
+    ...(admin ? [{ to: "/usuarios", label: "Usuarios" }] : []),
+  ];
+
   return (
-    <nav style={{
-      display: "flex",
-      alignItems: "center",
-      justifyContent: "space-between",
-      padding: "1rem 2rem",
-      backgroundColor: "#1e1e2e",
-      color: "#fff",
-    }}>
-      <span style={{ fontWeight: "500", fontSize: "18px" }}>Sistema de Ventas</span>
-      <div style={{ display: "flex", gap: "1.5rem", alignItems: "center" }}>
-        <button onClick={() => navigate({ to: "/productos" })} style={navBtn}>Productos</button>
-        <button onClick={() => navigate({ to: "/clientes" })} style={navBtn}>Clientes</button>
-        <button onClick={() => navigate({ to: "/ventas" })} style={navBtn}>Ventas</button>
-        {admin && (
-          <button onClick={() => navigate({ to: "/usuarios" })} style={navBtn}>Usuarios</button>
-        )}
-        <button onClick={handleLogout} style={{ ...navBtn, color: "#ff6b6b" }}>Cerrar sesión</button>
+    <nav className="bg-gray-900 text-white px-6 py-0 flex items-center justify-between h-14 border-b border-gray-800">
+      <div className="flex items-center gap-8">
+        <div className="flex items-center gap-2.5">
+          <div className="w-7 h-7 bg-white rounded-lg flex items-center justify-center">
+            <span className="text-gray-900 text-xs font-medium">SV</span>
+          </div>
+          <span className="text-sm font-medium">Sistema de Ventas</span>
+        </div>
+
+        <div className="flex items-center">
+          {navLinks.map((link) => (
+            <button
+              key={link.to}
+              onClick={() => navigate({ to: link.to })}
+              className={`px-4 h-14 text-sm transition-colors cursor-pointer border-b-2 ${
+                currentPath === link.to
+                  ? "text-white border-white"
+                  : "text-gray-400 border-transparent hover:text-white"
+              }`}
+            >
+              {link.label}
+            </button>
+          ))}
+        </div>
       </div>
+
+      <button
+        onClick={handleLogout}
+        className="text-sm text-gray-400 hover:text-red-400 transition-colors cursor-pointer"
+      >
+        Cerrar sesión
+      </button>
     </nav>
   );
 }
-
-const navBtn = {
-  background: "transparent",
-  border: "none",
-  color: "#fff",
-  fontSize: "14px",
-  cursor: "pointer",
-};
 
 export default Navbar;

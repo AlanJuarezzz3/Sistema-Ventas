@@ -4,12 +4,12 @@ import Productos from "./pages/Productos";
 import Clientes from "./pages/Clientes";
 import Ventas from "./pages/Ventas";
 import Usuarios from "./pages/Usuarios";
+import Dashboard from "./pages/Dashboard";
+import HistorialCliente from "./pages/HistorialCliente";
 import Navbar from "./components/Navbar";
 
 const rootRoute = createRootRoute({
-  component: () => {
-    return <Outlet />;
-  },
+  component: () => <Outlet />,
 });
 
 const loginRoute = createRoute({
@@ -34,6 +34,18 @@ const layoutRoute = createRoute({
   ),
 });
 
+const dashboardRoute = createRoute({
+  getParentRoute: () => layoutRoute,
+  path: "/dashboard",
+  beforeLoad: () => {
+    const token = localStorage.getItem("token");
+    if (!token) throw redirect({ to: "/" });
+    const payload = JSON.parse(atob(token.split(".")[1]));
+    if (payload.rol !== "admin") throw redirect({ to: "/productos" });
+  },
+  component: Dashboard,
+});
+
 const productosRoute = createRoute({
   getParentRoute: () => layoutRoute,
   path: "/productos",
@@ -44,6 +56,12 @@ const clientesRoute = createRoute({
   getParentRoute: () => layoutRoute,
   path: "/clientes",
   component: Clientes,
+});
+
+const historialClienteRoute = createRoute({
+  getParentRoute: () => layoutRoute,
+  path: "/clientes/$id/historial",
+  component: HistorialCliente,
 });
 
 const ventasRoute = createRoute({
@@ -67,8 +85,10 @@ const usuariosRoute = createRoute({
 const routeTree = rootRoute.addChildren([
   loginRoute,
   layoutRoute.addChildren([
+    dashboardRoute,
     productosRoute,
     clientesRoute,
+    historialClienteRoute,
     ventasRoute,
     usuariosRoute,
   ]),

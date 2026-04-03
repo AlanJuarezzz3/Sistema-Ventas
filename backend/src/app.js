@@ -6,6 +6,7 @@ const productosRoutes = require("./routes/productosRoutes");
 const clientesRoutes = require("./routes/clientesRoutes");
 const ventasRoutes = require("./routes/ventasRoutes");
 const usuariosRoutes = require("./routes/usuariosRoutes");
+const dashboardRoutes = require("./routes/dashboardRoutes");
 
 const app = express();
 
@@ -23,6 +24,7 @@ app.use("/productos", productosRoutes);
 app.use("/clientes", clientesRoutes);
 app.use("/ventas", ventasRoutes);
 app.use("/usuarios", usuariosRoutes);
+app.use("/dashboard", dashboardRoutes);
 
 // Ruta no encontrada (404 global)
 app.use((req, res) => {
