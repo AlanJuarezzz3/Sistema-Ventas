@@ -9,18 +9,19 @@ import {
 function Dashboard() {
   const [data, setData] = useState(null);
   const [error, setError] = useState("");
+  const [periodo, setPeriodo] = useState("mes");
 
   useEffect(() => {
     const fetchDashboard = async () => {
       try {
-        const res = await api.get("/dashboard");
+        const res = await api.get(`/dashboard?periodo=${periodo}`);
         setData(res.data);
       } catch {
         setError("Error al cargar el dashboard");
       }
     };
     fetchDashboard();
-  }, []);
+  }, [periodo]);
 
   if (error) return (
     <div style={{ padding: "2rem" }}>
@@ -44,18 +45,47 @@ function Dashboard() {
   };
 
   const metrics = [
-    { label: "Total ventas", value: data.totalVentas.total, color: "var(--accent)" },
+    { label: "Total ventas activas", value: data.totalVentas.total, color: "var(--accent)" },
     { label: "Ingresos totales", value: `$${parseFloat(data.ingresoTotal.total).toLocaleString("es-AR")}`, color: "var(--success)" },
     { label: "Clientes", value: data.totalClientes.total, color: "var(--accent)" },
     { label: "Productos", value: data.totalProductos.total, color: "var(--accent)" },
     { label: "Sin stock", value: data.productosSinStock.total, color: data.productosSinStock.total > 0 ? "var(--danger)" : "var(--success)", alert: data.productosSinStock.total > 0 },
   ];
 
+  const periodoLabel = {
+    dia: "hoy",
+    semana: "últimos 7 días",
+    mes: "últimos 30 días",
+  };
+
   return (
     <div style={{ padding: "2rem" }}>
-      <div style={{ marginBottom: "1.5rem" }}>
-        <h2 style={{ ...s.title, fontSize: "24px" }}>Dashboard</h2>
-        <p style={{ ...s.subtitle, fontSize: "14px" }}>Resumen general del sistema</p>
+      <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: "1.5rem" }}>
+        <div>
+          <h2 style={{ ...s.title, fontSize: "24px" }}>Dashboard</h2>
+          <p style={{ ...s.subtitle, fontSize: "14px" }}>Resumen general del sistema</p>
+        </div>
+        <div style={{ display: "flex", gap: "6px" }}>
+          {["dia", "semana", "mes"].map((p) => (
+            <button
+              key={p}
+              onClick={() => setPeriodo(p)}
+              style={{
+                padding: "6px 16px",
+                fontSize: "13px",
+                borderRadius: "8px",
+                cursor: "pointer",
+                border: "1px solid var(--border)",
+                backgroundColor: periodo === p ? "var(--accent)" : "transparent",
+                color: periodo === p ? "#fff" : "var(--text-secondary)",
+                fontWeight: periodo === p ? "500" : "400",
+                transition: "all 0.15s",
+              }}
+            >
+              {p === "dia" ? "Hoy" : p === "semana" ? "Semana" : "Mes"}
+            </button>
+          ))}
+        </div>
       </div>
 
       <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: "12px", marginBottom: "1.5rem" }}>
@@ -76,11 +106,14 @@ function Dashboard() {
 
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1.5rem", marginBottom: "1.5rem" }}>
         <div style={{ ...s.card, padding: "1.25rem" }}>
-          <p style={{ color: "var(--text-primary)", fontSize: "14px", fontWeight: "500", marginBottom: "1.25rem" }}>
-            Ingresos últimos 6 meses
-          </p>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1.25rem" }}>
+            <p style={{ color: "var(--text-primary)", fontSize: "14px", fontWeight: "500" }}>
+              Ingresos — {periodoLabel[periodo]}
+            </p>
+            <span style={s.badgeAccent}>{data.ventasPorPeriodo.length} días con ventas</span>
+          </div>
           <ResponsiveContainer width="100%" height={220}>
-            <AreaChart data={data.ventasPorMes}>
+            <AreaChart data={data.ventasPorPeriodo}>
               <defs>
                 <linearGradient id="colorIngresos" x1="0" y1="0" x2="0" y2="1">
                   <stop offset="5%" stopColor="#8b5cf6" stopOpacity={0.3} />
@@ -88,7 +121,7 @@ function Dashboard() {
                 </linearGradient>
               </defs>
               <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
-              <XAxis dataKey="mes" fontSize={11} tick={{ fill: "var(--text-muted)" }} axisLine={false} tickLine={false} />
+              <XAxis dataKey="dia" fontSize={11} tick={{ fill: "var(--text-muted)" }} axisLine={false} tickLine={false} />
               <YAxis fontSize={11} tick={{ fill: "var(--text-muted)" }} axisLine={false} tickLine={false} />
               <Tooltip
                 contentStyle={tooltipStyle}
@@ -120,34 +153,61 @@ function Dashboard() {
         </div>
       </div>
 
-      <div style={{ ...s.card, overflow: "hidden" }}>
-        <div style={{ padding: "1rem 1.25rem", borderBottom: "1px solid var(--border)" }}>
-          <p style={{ color: "var(--text-primary)", fontSize: "14px", fontWeight: "500" }}>Últimas 5 ventas</p>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1.5rem", marginBottom: "1.5rem" }}>
+        <div style={{ ...s.card, padding: "1.25rem" }}>
+          <p style={{ color: "var(--text-primary)", fontSize: "14px", fontWeight: "500", marginBottom: "1.25rem" }}>
+            Ingresos últimos 6 meses
+          </p>
+          <ResponsiveContainer width="100%" height={200}>
+            <AreaChart data={data.ventasPorMes}>
+              <defs>
+                <linearGradient id="colorMes" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor="#10b981" stopOpacity={0.3} />
+                  <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
+                </linearGradient>
+              </defs>
+              <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
+              <XAxis dataKey="mes" fontSize={11} tick={{ fill: "var(--text-muted)" }} axisLine={false} tickLine={false} />
+              <YAxis fontSize={11} tick={{ fill: "var(--text-muted)" }} axisLine={false} tickLine={false} />
+              <Tooltip
+                contentStyle={tooltipStyle}
+                cursor={{ fill: "rgba(16, 185, 129, 0.05)" }}
+                formatter={(value) => [`$${parseFloat(value).toLocaleString("es-AR")}`, "Ingresos"]}
+              />
+              <Area type="monotone" dataKey="ingresos" stroke="#10b981" strokeWidth={2} fill="url(#colorMes)" dot={{ r: 4, fill: "#10b981" }} />
+            </AreaChart>
+          </ResponsiveContainer>
         </div>
-        <table style={s.table}>
-          <thead>
-            <tr>
-              <th style={s.th}>ID</th>
-              <th style={s.th}>Cliente</th>
-              <th style={s.th}>Total</th>
-              <th style={s.th}>Fecha</th>
-            </tr>
-          </thead>
-          <tbody>
-            {data.ventasRecientes.map((v) => (
-              <tr key={v.id}
-                style={{ transition: "background 0.15s" }}
-                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = "var(--bg-input)"}
-                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = "transparent"}
-              >
-                <td style={s.tdMuted}>{v.id}</td>
-                <td style={{ ...s.td, fontWeight: "500" }}>{v.cliente_nombre}</td>
-                <td style={{ ...s.td, color: "var(--success)" }}>${parseFloat(v.total).toLocaleString("es-AR")}</td>
-                <td style={s.td}>{new Date(v.fecha).toLocaleDateString("es-AR")}</td>
+
+        <div style={{ ...s.card, overflow: "hidden" }}>
+          <div style={{ padding: "1rem 1.25rem", borderBottom: "1px solid var(--border)" }}>
+            <p style={{ color: "var(--text-primary)", fontSize: "14px", fontWeight: "500" }}>Últimas 5 ventas</p>
+          </div>
+          <table style={s.table}>
+            <thead>
+              <tr>
+                <th style={s.th}>ID</th>
+                <th style={s.th}>Cliente</th>
+                <th style={s.th}>Total</th>
+                <th style={s.th}>Fecha</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {data.ventasRecientes.map((v) => (
+                <tr key={v.id}
+                  style={{ transition: "background 0.15s" }}
+                  onMouseEnter={(e) => e.currentTarget.style.backgroundColor = "var(--bg-input)"}
+                  onMouseLeave={(e) => e.currentTarget.style.backgroundColor = "transparent"}
+                >
+                  <td style={s.tdMuted}>{v.id}</td>
+                  <td style={{ ...s.td, fontWeight: "500" }}>{v.cliente_nombre}</td>
+                  <td style={{ ...s.td, color: "var(--success)" }}>${parseFloat(v.total).toLocaleString("es-AR")}</td>
+                  <td style={s.td}>{new Date(v.fecha).toLocaleDateString("es-AR")}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
   );

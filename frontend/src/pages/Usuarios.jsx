@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import api from "../api/axios";
 import { getUsuario } from "../api/auth";
 import { s } from "../styles";
+import ConfirmModal from "../components/ConfirmModal";
 
 function Usuarios() {
   const [usuarios, setUsuarios] = useState([]);
@@ -11,6 +12,7 @@ function Usuarios() {
   const [rol, setRol] = useState("vendedor");
   const [error, setError] = useState("");
   const [showForm, setShowForm] = useState(false);
+  const [confirm, setConfirm] = useState(null);
   const usuarioActual = getUsuario();
 
   const fetchUsuarios = async () => {
@@ -39,17 +41,32 @@ function Usuarios() {
     }
   };
 
-  const handleDelete = async (id) => {
-    try {
-      await api.delete(`/usuarios/${id}`);
-      fetchUsuarios();
-    } catch (err) {
-      setError(err.response?.data?.mensaje || "Error al eliminar usuario");
-    }
+  const handleDelete = (id, nombre) => {
+    setConfirm({
+      titulo: "Eliminar usuario",
+      mensaje: `¿Estás seguro que querés eliminar a "${nombre}"? Esta acción no se puede deshacer.`,
+      accion: async () => {
+        try {
+          await api.delete(`/usuarios/${id}`);
+          fetchUsuarios();
+        } catch (err) {
+          setError(err.response?.data?.mensaje || "Error al eliminar usuario");
+        }
+      }
+    });
   };
 
   return (
     <div style={{ padding: "2rem" }}>
+      {confirm && (
+        <ConfirmModal
+          titulo={confirm.titulo}
+          mensaje={confirm.mensaje}
+          onConfirmar={() => { confirm.accion(); setConfirm(null); }}
+          onCancelar={() => setConfirm(null)}
+        />
+      )}
+
       <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: "1.5rem" }}>
         <div>
           <h2 style={{ ...s.title, fontSize: "24px" }}>Usuarios</h2>
@@ -142,7 +159,9 @@ function Usuarios() {
                 <td style={s.td}>{new Date(u.creado_at).toLocaleDateString("es-AR")}</td>
                 <td style={s.td}>
                   {usuarioActual?.id !== u.id && (
-                    <button onClick={() => handleDelete(u.id)} style={s.btnDanger}>Eliminar</button>
+                    <button onClick={() => handleDelete(u.id, u.nombre)} style={s.btnDanger}>
+                      Eliminar
+                    </button>
                   )}
                 </td>
               </tr>

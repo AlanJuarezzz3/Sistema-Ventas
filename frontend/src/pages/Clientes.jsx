@@ -4,6 +4,7 @@ import api from "../api/axios";
 import { isAdmin } from "../api/auth";
 import { exportarClientesPDF, exportarClientesExcel } from "../api/exportUtils";
 import { s } from "../styles";
+import ConfirmModal from "../components/ConfirmModal";
 
 function Clientes() {
   const [clientes, setClientes] = useState([]);
@@ -14,6 +15,7 @@ function Clientes() {
   const [editId, setEditId] = useState(null);
   const [error, setError] = useState("");
   const [showForm, setShowForm] = useState(false);
+  const [confirm, setConfirm] = useState(null);
   const admin = isAdmin();
   const navigate = useNavigate();
 
@@ -53,13 +55,19 @@ function Clientes() {
     setShowForm(true);
   };
 
-  const handleDelete = async (id) => {
-    try {
-      await api.delete(`/clientes/${id}`);
-      fetchClientes();
-    } catch {
-      setError("Error al eliminar cliente");
-    }
+  const handleDelete = (id, nombre) => {
+    setConfirm({
+      titulo: "Eliminar cliente",
+      mensaje: `¿Estás seguro que querés eliminar a "${nombre}"? Se perderán todos sus datos.`,
+      accion: async () => {
+        try {
+          await api.delete(`/clientes/${id}`);
+          fetchClientes();
+        } catch {
+          setError("Error al eliminar cliente");
+        }
+      }
+    });
   };
 
   const handleCancelar = () => {
@@ -78,10 +86,19 @@ function Clientes() {
 
   return (
     <div style={{ padding: "2rem" }}>
+      {confirm && (
+        <ConfirmModal
+          titulo={confirm.titulo}
+          mensaje={confirm.mensaje}
+          onConfirmar={() => { confirm.accion(); setConfirm(null); }}
+          onCancelar={() => setConfirm(null)}
+        />
+      )}
+
       <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: "1.5rem" }}>
         <div>
           <h2 style={{ ...s.title, fontSize: "24px" }}>Clientes</h2>
-<p style={{ ...s.subtitle, fontSize: "14px" }}>{clientes.length} clientes en total</p>
+          <p style={{ ...s.subtitle, fontSize: "14px" }}>{clientes.length} clientes en total</p>
         </div>
         {!showForm && (
           <button onClick={() => setShowForm(true)} style={s.btnPrimary}>
@@ -94,7 +111,7 @@ function Clientes() {
 
       {showForm && (
         <div style={{ ...s.card, padding: "1.25rem", marginBottom: "1.5rem" }}>
-          <p style={{ ...s.subtitle, marginBottom: "1rem", fontWeight: "500", color: "var(--text-primary)" }}>
+          <p style={{ color: "var(--text-primary)", fontSize: "14px", fontWeight: "500", marginBottom: "1rem" }}>
             {editId ? "Editar cliente" : "Nuevo cliente"}
           </p>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "12px", marginBottom: "1rem" }}>
@@ -125,11 +142,13 @@ function Clientes() {
           value={busqueda}
           onChange={(e) => setBusqueda(e.target.value)}
         />
-        <span style={s.muted}>{clientesFiltrados.length} resultado{clientesFiltrados.length !== 1 ? "s" : ""}</span>
+        <span style={{ ...s.muted, fontSize: "14px", color: "var(--text-secondary)" }}>
+          {clientesFiltrados.length} resultado{clientesFiltrados.length !== 1 ? "s" : ""}
+        </span>
         {admin && (
           <div style={{ marginLeft: "auto", display: "flex", gap: "8px" }}>
             <button onClick={() => exportarClientesPDF(clientesFiltrados)} style={s.btnPrimary}>Exportar PDF</button>
-<button onClick={() => exportarClientesExcel(clientesFiltrados)} style={s.btnPrimary}>Exportar Excel</button>
+            <button onClick={() => exportarClientesExcel(clientesFiltrados)} style={s.btnPrimary}>Exportar Excel</button>
           </div>
         )}
       </div>
@@ -155,9 +174,9 @@ function Clientes() {
             ) : (
               clientesFiltrados.map((c) => (
                 <tr key={c.id}
+                  style={{ transition: "background 0.15s" }}
                   onMouseEnter={(e) => e.currentTarget.style.backgroundColor = "var(--bg-input)"}
                   onMouseLeave={(e) => e.currentTarget.style.backgroundColor = "transparent"}
-                  style={{ transition: "background 0.15s" }}
                 >
                   <td style={s.tdMuted}>{c.id}</td>
                   <td style={{ ...s.td, fontWeight: "500" }}>{c.nombre}</td>
@@ -174,7 +193,7 @@ function Clientes() {
                       {admin && (
                         <>
                           <button onClick={() => handleEdit(c)} style={s.btnSmall}>Editar</button>
-                          <button onClick={() => handleDelete(c.id)} style={s.btnDanger}>Eliminar</button>
+                          <button onClick={() => handleDelete(c.id, c.nombre)} style={s.btnDanger}>Eliminar</button>
                         </>
                       )}
                     </div>

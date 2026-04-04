@@ -3,6 +3,7 @@ import api from "../api/axios";
 import { isAdmin } from "../api/auth";
 import { exportarProductosPDF, exportarProductosExcel } from "../api/exportUtils";
 import { s } from "../styles";
+import ConfirmModal from "../components/ConfirmModal";
 
 function Productos() {
   const [productos, setProductos] = useState([]);
@@ -14,6 +15,7 @@ function Productos() {
   const [editId, setEditId] = useState(null);
   const [error, setError] = useState("");
   const [showForm, setShowForm] = useState(false);
+  const [confirm, setConfirm] = useState(null);
   const admin = isAdmin();
 
   const fetchProductos = async () => {
@@ -52,13 +54,19 @@ function Productos() {
     setShowForm(true);
   };
 
-  const handleDelete = async (id) => {
-    try {
-      await api.delete(`/productos/${id}`);
-      fetchProductos();
-    } catch {
-      setError("Error al eliminar producto");
-    }
+  const handleDelete = (id, nombre) => {
+    setConfirm({
+      titulo: "Eliminar producto",
+      mensaje: `¿Estás seguro que querés eliminar "${nombre}"? Esta acción no se puede deshacer.`,
+      accion: async () => {
+        try {
+          await api.delete(`/productos/${id}`);
+          fetchProductos();
+        } catch {
+          setError("Error al eliminar producto");
+        }
+      }
+    });
   };
 
   const handleCancelar = () => {
@@ -78,10 +86,19 @@ function Productos() {
 
   return (
     <div style={{ padding: "2rem" }}>
+      {confirm && (
+        <ConfirmModal
+          titulo={confirm.titulo}
+          mensaje={confirm.mensaje}
+          onConfirmar={() => { confirm.accion(); setConfirm(null); }}
+          onCancelar={() => setConfirm(null)}
+        />
+      )}
+
       <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: "1.5rem" }}>
         <div>
-         <h2 style={{ ...s.title, fontSize: "24px" }}>Productos</h2>
-<p style={{ ...s.subtitle, fontSize: "14px" }}>{productos.length} productos en total</p>
+          <h2 style={{ ...s.title, fontSize: "24px" }}>Productos</h2>
+          <p style={{ ...s.subtitle, fontSize: "14px" }}>{productos.length} productos en total</p>
         </div>
         {admin && !showForm && (
           <button onClick={() => setShowForm(true)} style={s.btnPrimary}>
@@ -94,7 +111,7 @@ function Productos() {
 
       {admin && showForm && (
         <div style={{ ...s.card, padding: "1.25rem", marginBottom: "1.5rem" }}>
-          <p style={{ ...s.subtitle, marginBottom: "1rem", fontWeight: "500", color: "var(--text-primary)" }}>
+          <p style={{ color: "var(--text-primary)", fontSize: "14px", fontWeight: "500", marginBottom: "1rem" }}>
             {editId ? "Editar producto" : "Nuevo producto"}
           </p>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "12px", marginBottom: "1rem" }}>
@@ -131,11 +148,13 @@ function Productos() {
           <option value="pocostock">Poco stock (≤5)</option>
           <option value="sinstock">Sin stock</option>
         </select>
-       <span style={{ ...s.muted, fontSize: "14px", color: "var(--text-secondary)" }}>{productosFiltrados.length} resultado{productosFiltrados.length !== 1 ? "s" : ""}</span>
+        <span style={{ ...s.muted, fontSize: "14px", color: "var(--text-secondary)" }}>
+          {productosFiltrados.length} resultado{productosFiltrados.length !== 1 ? "s" : ""}
+        </span>
         {admin && (
           <div style={{ marginLeft: "auto", display: "flex", gap: "8px" }}>
             <button onClick={() => exportarProductosPDF(productosFiltrados)} style={s.btnPrimary}>Exportar PDF</button>
-<button onClick={() => exportarProductosExcel(productosFiltrados)} style={s.btnPrimary}>Exportar Excel</button>
+            <button onClick={() => exportarProductosExcel(productosFiltrados)} style={s.btnPrimary}>Exportar Excel</button>
           </div>
         )}
       </div>
@@ -160,7 +179,8 @@ function Productos() {
               </tr>
             ) : (
               productosFiltrados.map((p) => (
-                <tr key={p.id} style={{ transition: "background 0.15s" }}
+                <tr key={p.id}
+                  style={{ transition: "background 0.15s" }}
                   onMouseEnter={(e) => e.currentTarget.style.backgroundColor = "var(--bg-input)"}
                   onMouseLeave={(e) => e.currentTarget.style.backgroundColor = "transparent"}
                 >
@@ -180,7 +200,7 @@ function Productos() {
                     <td style={s.td}>
                       <div style={{ display: "flex", gap: "6px" }}>
                         <button onClick={() => handleEdit(p)} style={s.btnSmall}>Editar</button>
-                        <button onClick={() => handleDelete(p.id)} style={s.btnDanger}>Eliminar</button>
+                        <button onClick={() => handleDelete(p.id, p.nombre)} style={s.btnDanger}>Eliminar</button>
                       </div>
                     </td>
                   )}

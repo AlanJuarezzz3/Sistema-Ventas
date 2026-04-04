@@ -3,6 +3,7 @@ import api from "../api/axios";
 import { isAdmin } from "../api/auth";
 import { exportarVentasPDF, exportarVentasExcel } from "../api/exportUtils";
 import { s } from "../styles";
+import ConfirmModal from "../components/ConfirmModal";
 
 function Ventas() {
   const [ventas, setVentas] = useState([]);
@@ -13,6 +14,7 @@ function Ventas() {
   const [error, setError] = useState("");
   const [filtroEstado, setFiltroEstado] = useState("todas");
   const [showForm, setShowForm] = useState(false);
+  const [confirm, setConfirm] = useState(null);
   const admin = isAdmin();
 
   const fetchData = async () => {
@@ -82,13 +84,19 @@ function Ventas() {
     }
   };
 
-  const handleAnular = async (id) => {
-    try {
-      await api.put(`/ventas/${id}/anular`);
-      fetchData();
-    } catch (err) {
-      setError(err.response?.data?.mensaje || "Error al anular venta");
-    }
+  const handleAnular = (id) => {
+    setConfirm({
+      titulo: "Anular venta",
+      mensaje: `¿Estás seguro que querés anular la venta #${id}? El stock de los productos se va a restaurar automáticamente.`,
+      accion: async () => {
+        try {
+          await api.put(`/ventas/${id}/anular`);
+          fetchData();
+        } catch (err) {
+          setError(err.response?.data?.mensaje || "Error al anular venta");
+        }
+      }
+    });
   };
 
   const calcularTotal = () => {
@@ -106,6 +114,15 @@ function Ventas() {
 
   return (
     <div style={{ padding: "2rem" }}>
+      {confirm && (
+        <ConfirmModal
+          titulo={confirm.titulo}
+          mensaje={confirm.mensaje}
+          onConfirmar={() => { confirm.accion(); setConfirm(null); }}
+          onCancelar={() => setConfirm(null)}
+        />
+      )}
+
       <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: "1.5rem" }}>
         <div>
           <h2 style={{ ...s.title, fontSize: "24px" }}>Ventas</h2>
