@@ -27,51 +27,117 @@ function Login() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
-      <div className="bg-white rounded-2xl border border-gray-200 shadow-sm w-full max-w-sm p-8">
-        <div className="mb-8">
-          <div className="w-10 h-10 bg-gray-900 rounded-xl mb-4 flex items-center justify-center">
-  <span className="text-white text-xs font-medium">SV</span>
-</div>
-          <h1 className="text-xl font-medium text-gray-900">Sistema de Ventas</h1>
-          <p className="text-sm text-gray-500 mt-1">Iniciá sesión para continuar</p>
+    <div style={{
+      minHeight: "100vh",
+      backgroundColor: "var(--bg-base)",
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      padding: "1rem",
+    }}>
+      <div style={{
+        backgroundColor: "var(--bg-card)",
+        border: "1px solid var(--border)",
+        borderRadius: "16px",
+        width: "100%",
+        maxWidth: "380px",
+        padding: "2rem",
+      }}>
+        <div style={{ marginBottom: "2rem" }}>
+          <div style={{
+            width: "40px", height: "40px",
+            backgroundColor: "var(--accent)",
+            borderRadius: "10px",
+            display: "flex", alignItems: "center", justifyContent: "center",
+            marginBottom: "1rem",
+          }}>
+            <span style={{ color: "#fff", fontSize: "13px", fontWeight: "600" }}>SV</span>
+          </div>
+          <h1 style={{ color: "var(--text-primary)", fontSize: "20px", fontWeight: "500", marginBottom: "4px" }}>
+            Sistema de Ventas
+          </h1>
+          <p style={{ color: "var(--text-secondary)", fontSize: "13px" }}>
+            Iniciá sesión para continuar
+          </p>
         </div>
 
         {error && (
-          <div className="bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg px-4 py-3 mb-4">
+          <div style={{
+            backgroundColor: "var(--danger-light)",
+            border: "1px solid var(--danger-border)",
+            color: "var(--danger)",
+            fontSize: "13px",
+            borderRadius: "8px",
+            padding: "10px 14px",
+            marginBottom: "1rem",
+          }}>
             {error}
           </div>
         )}
 
-        <div className="space-y-4">
-          <div>
-            <label className="block text-sm text-gray-600 mb-1.5">Email</label>
-            <input
-              type="email"
-              placeholder="alan@email.com"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              onKeyDown={handleKeyDown}
-              className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-gray-400 transition-colors"
-            />
-          </div>
-          <div>
-            <label className="block text-sm text-gray-600 mb-1.5">Password</label>
-            <input
-              type="password"
-              placeholder="••••••"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              onKeyDown={handleKeyDown}
-              className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-gray-400 transition-colors"
-            />
-          </div>
+        <div style={{ marginBottom: "1rem" }}>
+          <label style={{ display: "block", fontSize: "12px", color: "var(--accent-text)", marginBottom: "6px" }}>
+            Email
+          </label>
+          <input
+            type="email"
+            placeholder="alan@email.com"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            onKeyDown={handleKeyDown}
+            style={{
+              width: "100%",
+              padding: "10px 12px",
+              fontSize: "14px",
+              backgroundColor: "var(--bg-input)",
+              border: "1px solid var(--border)",
+              borderRadius: "8px",
+              color: "var(--text-primary)",
+              outline: "none",
+              boxSizing: "border-box",
+            }}
+          />
+        </div>
+
+        <div style={{ marginBottom: "1.5rem" }}>
+          <label style={{ display: "block", fontSize: "12px", color: "var(--accent-text)", marginBottom: "6px" }}>
+            Password
+          </label>
+          <input
+            type="password"
+            placeholder="••••••"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            onKeyDown={handleKeyDown}
+            style={{
+              width: "100%",
+              padding: "10px 12px",
+              fontSize: "14px",
+              backgroundColor: "var(--bg-input)",
+              border: "1px solid var(--border)",
+              borderRadius: "8px",
+              color: "var(--text-primary)",
+              outline: "none",
+              boxSizing: "border-box",
+            }}
+          />
         </div>
 
         <button
           onClick={handleLogin}
           disabled={loading}
-          className="mt-6 w-full bg-gray-900 text-white text-sm font-medium py-2.5 rounded-lg hover:bg-gray-700 transition-colors disabled:opacity-50 cursor-pointer"
+          style={{
+            width: "100%",
+            padding: "10px",
+            fontSize: "14px",
+            fontWeight: "500",
+            backgroundColor: "var(--accent)",
+            color: "#fff",
+            border: "none",
+            borderRadius: "8px",
+            cursor: "pointer",
+            opacity: loading ? 0.7 : 1,
+          }}
         >
           {loading ? "Iniciando sesión..." : "Iniciar sesión"}
         </button>
