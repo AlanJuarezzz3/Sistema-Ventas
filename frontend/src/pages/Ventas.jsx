@@ -99,6 +99,21 @@ function Ventas() {
     });
   };
 
+  const handleEliminar = (id) => {
+    setConfirm({
+      titulo: "Eliminar venta definitivamente",
+      mensaje: `¿Estás seguro que querés eliminar la venta #${id} del historial? Esta acción es irreversible y no se puede deshacer.`,
+      accion: async () => {
+        try {
+          await api.delete(`/ventas/${id}`);
+          fetchData();
+        } catch (err) {
+          setError(err.response?.data?.mensaje || "Error al eliminar venta");
+        }
+      }
+    });
+  };
+
   const calcularTotal = () => {
     return items.reduce((acc, i) => {
       const cantidad = parseFloat(i.cantidad) || 0;
@@ -261,7 +276,7 @@ function Ventas() {
             ) : (
               ventasFiltradas.map((v) => (
                 <tr key={v.id}
-                  style={{ opacity: v.estado === "anulada" ? 0.5 : 1, transition: "background 0.15s" }}
+                  style={{ opacity: v.estado === "anulada" ? 0.6 : 1, transition: "background 0.15s" }}
                   onMouseEnter={(e) => e.currentTarget.style.backgroundColor = "var(--bg-input)"}
                   onMouseLeave={(e) => e.currentTarget.style.backgroundColor = "transparent"}
                 >
@@ -278,9 +293,26 @@ function Ventas() {
                   <td style={s.td}>{new Date(v.fecha).toLocaleDateString("es-AR")}</td>
                   {admin && (
                     <td style={s.td}>
-                      {v.estado === "activa" && (
-                        <button onClick={() => handleAnular(v.id)} style={s.btnDanger}>Anular</button>
-                      )}
+                      <div style={{ display: "flex", gap: "6px" }}>
+                        {v.estado === "activa" && (
+                          <button onClick={() => handleAnular(v.id)} style={s.btnDanger}>
+                            Anular
+                          </button>
+                        )}
+                        {v.estado === "anulada" && (
+                          <button
+                            onClick={() => handleEliminar(v.id)}
+                            title="Eliminar definitivamente"
+                            style={{
+                              ...s.btnDanger,
+                              padding: "4px 10px",
+                              fontSize: "15px",
+                            }}
+                          >
+                            🗑️
+                          </button>
+                        )}
+                      </div>
                     </td>
                   )}
                 </tr>

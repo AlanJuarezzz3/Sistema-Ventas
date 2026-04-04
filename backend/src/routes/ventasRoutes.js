@@ -9,5 +9,6 @@ router.get("/", verificarToken, ventasController.getVentas);
 router.get("/:id", verificarToken, ventasController.getVentaById);
 router.post("/", verificarToken, ventasController.createVenta);
 router.put("/:id/anular", verificarToken, verificarAdmin, ventasController.anularVenta);
+router.delete("/:id", verificarToken, verificarAdmin, ventasController.eliminarVenta);
 
 module.exports = router;
