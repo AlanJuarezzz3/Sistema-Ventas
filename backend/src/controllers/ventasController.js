@@ -168,6 +168,9 @@ const anularVenta = (req, res) => {
     if (ventaResult[0].estado === "anulada") {
       return res.status(400).json({ mensaje: "La venta ya está anulada" });
     }
+    if (ventaResult[0].estado === "pagada") {
+      return res.status(400).json({ mensaje: "No se puede anular una venta pagada" });
+    }
 
     db.query(
       "SELECT producto_id, cantidad FROM detalle_ventas WHERE venta_id = ?",
@@ -203,6 +206,31 @@ const anularVenta = (req, res) => {
         });
       }
     );
+  });
+};
+
+const marcarPagada = (req, res) => {
+  const { id } = req.params;
+
+  db.query("SELECT * FROM ventas WHERE id = ?", [id], (err, ventaResult) => {
+    if (err) {
+      console.error("Error al buscar venta:", err);
+      return res.status(500).json({ mensaje: "Error interno del servidor" });
+    }
+    if (ventaResult.length === 0) {
+      return res.status(404).json({ mensaje: "Venta no encontrada" });
+    }
+    if (ventaResult[0].estado !== "activa") {
+      return res.status(400).json({ mensaje: "Solo se pueden marcar como pagadas las ventas activas" });
+    }
+
+    db.query("UPDATE ventas SET estado = 'pagada' WHERE id = ?", [id], (err) => {
+      if (err) {
+        console.error("Error al marcar venta como pagada:", err);
+        return res.status(500).json({ mensaje: "Error interno del servidor" });
+      }
+      res.json({ mensaje: "Venta marcada como pagada" });
+    });
   });
 };
 
@@ -246,5 +274,6 @@ module.exports = {
   getVentaById,
   createVenta,
   anularVenta,
+  marcarPagada,
   eliminarVenta,
 };

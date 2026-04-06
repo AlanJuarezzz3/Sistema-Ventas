@@ -26,14 +26,28 @@ const createProducto = (req, res) => {
   }
 
   db.query(
-    "INSERT INTO productos (nombre, precio, stock) VALUES (?, ?, ?)",
-    [nombre, precio, stock],
+    "SELECT id FROM productos WHERE LOWER(nombre) = LOWER(?)",
+    [nombre],
     (err, result) => {
       if (err) {
-        console.error("Error al crear producto:", err);
+        console.error("Error al verificar producto:", err);
         return res.status(500).json({ mensaje: "Error interno del servidor" });
       }
-      res.status(201).json({ mensaje: "Producto creado", id: result.insertId });
+      if (result.length > 0) {
+        return res.status(400).json({ mensaje: `Ese producto ya se encuentra agregado` });
+      }
+
+      db.query(
+        "INSERT INTO productos (nombre, precio, stock) VALUES (?, ?, ?)",
+        [nombre, precio, stock],
+        (err, result) => {
+          if (err) {
+            console.error("Error al crear producto:", err);
+            return res.status(500).json({ mensaje: "Error interno del servidor" });
+          }
+          res.status(201).json({ mensaje: "Producto creado", id: result.insertId });
+        }
+      );
     }
   );
 };

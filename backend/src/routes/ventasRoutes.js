@@ -9,6 +9,7 @@ router.get("/", verificarToken, ventasController.getVentas);
 router.get("/:id", verificarToken, ventasController.getVentaById);
 router.post("/", verificarToken, ventasController.createVenta);
 router.put("/:id/anular", verificarToken, verificarAdmin, ventasController.anularVenta);
+router.put("/:id/pagada", verificarToken, verificarAdmin, ventasController.marcarPagada);
 router.delete("/:id", verificarToken, verificarAdmin, ventasController.eliminarVenta);
 
 module.exports = router;

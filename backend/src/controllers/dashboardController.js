@@ -9,16 +9,16 @@ const getDashboard = (req, res) => {
   else intervalo = "INTERVAL 30 DAY";
 
   const queries = {
-    totalVentas: `SELECT COUNT(*) AS total FROM ventas WHERE estado = 'activa'`,
-    ingresoTotal: `SELECT COALESCE(SUM(total), 0) AS total FROM ventas WHERE estado = 'activa'`,
+    totalVentas: `SELECT COUNT(*) AS total FROM ventas WHERE estado IN ('activa', 'pagada')`,
+    ingresoTotal: `SELECT COALESCE(SUM(total), 0) AS total FROM ventas WHERE estado IN ('activa', 'pagada')`,
     totalClientes: `SELECT COUNT(*) AS total FROM clientes`,
     totalProductos: `SELECT COUNT(*) AS total FROM productos`,
     productosSinStock: `SELECT COUNT(*) AS total FROM productos WHERE stock = 0`,
     ventasRecientes: `
-      SELECT v.id, v.total, v.fecha, c.nombre AS cliente_nombre
+      SELECT v.id, v.total, v.fecha, v.estado, c.nombre AS cliente_nombre
       FROM ventas v
       JOIN clientes c ON v.cliente_id = c.id
-      WHERE v.estado = 'activa'
+      WHERE v.estado IN ('activa', 'pagada')
       ORDER BY v.fecha DESC
       LIMIT 5
     `,
@@ -27,7 +27,7 @@ const getDashboard = (req, res) => {
       FROM detalle_ventas dv
       JOIN productos p ON dv.producto_id = p.id
       JOIN ventas v ON dv.venta_id = v.id
-      WHERE v.estado = 'activa'
+      WHERE v.estado IN ('activa', 'pagada')
       GROUP BY p.id, p.nombre
       ORDER BY total_vendido DESC
       LIMIT 5
@@ -38,7 +38,7 @@ const getDashboard = (req, res) => {
         COUNT(*) AS cantidad,
         COALESCE(SUM(total), 0) AS ingresos
       FROM ventas
-      WHERE estado = 'activa'
+      WHERE estado IN ('activa', 'pagada')
         AND fecha >= DATE_SUB(NOW(), ${intervalo})
       GROUP BY dia
       ORDER BY dia ASC
@@ -49,7 +49,7 @@ const getDashboard = (req, res) => {
         COUNT(*) AS cantidad,
         SUM(total) AS ingresos
       FROM ventas
-      WHERE estado = 'activa'
+      WHERE estado IN ('activa', 'pagada')
         AND fecha >= DATE_SUB(NOW(), INTERVAL 6 MONTH)
       GROUP BY mes
       ORDER BY mes ASC

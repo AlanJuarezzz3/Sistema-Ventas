@@ -7,6 +7,7 @@ import Usuarios from "./pages/Usuarios";
 import Dashboard from "./pages/Dashboard";
 import HistorialCliente from "./pages/HistorialCliente";
 import Navbar from "./components/Navbar";
+import StockAlerts from "./components/StockAlerts";
 
 const rootRoute = createRootRoute({
   component: () => <Outlet />,
@@ -27,6 +28,7 @@ const layoutRoute = createRoute({
   component: () => (
     <div>
       <Navbar />
+      <StockAlerts />
       <div style={{ padding: "2rem" }}>
         <Outlet />
       </div>

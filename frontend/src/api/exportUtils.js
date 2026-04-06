@@ -1,6 +1,7 @@
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import * as XLSX from "xlsx";
+import api from "./axios";
 
 export const exportarVentasPDF = (ventas) => {
   const doc = new jsPDF();
@@ -119,4 +120,59 @@ export const exportarClientesExcel = (clientes) => {
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, "Clientes");
   XLSX.writeFile(wb, `clientes_${new Date().toISOString().slice(0, 10)}.xlsx`);
+};
+
+export const generarReciboPDF = async (venta_id) => {
+  const res = await api.get(`/ventas/${venta_id}`);
+  const venta = res.data;
+
+  const doc = new jsPDF();
+
+  doc.setFillColor(30, 30, 46);
+  doc.rect(0, 0, 210, 40, "F");
+  doc.setTextColor(255, 255, 255);
+  doc.setFontSize(20);
+  doc.setFont("helvetica", "bold");
+  doc.text("Recibo de Pago", 14, 18);
+  doc.setFontSize(10);
+  doc.setFont("helvetica", "normal");
+  doc.text("Sistema de Ventas", 14, 28);
+  doc.text(`Fecha: ${new Date(venta.fecha).toLocaleDateString("es-AR")}`, 14, 35);
+
+  doc.setTextColor(0, 0, 0);
+  doc.setFontSize(11);
+  doc.setFont("helvetica", "bold");
+  doc.text("Datos de la venta", 14, 55);
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(10);
+  doc.text(`N° de venta: #${venta.id}`, 14, 63);
+  doc.text(`Cliente: ${venta.cliente_nombre}`, 14, 70);
+  doc.text(`Estado: PAGADA`, 14, 77);
+
+  autoTable(doc, {
+    startY: 88,
+    head: [["Producto", "Cantidad", "Precio unitario", "Subtotal"]],
+    body: venta.detalle.map((d) => [
+      d.producto_nombre,
+      d.cantidad,
+      `$${parseFloat(d.precio_unitario).toLocaleString("es-AR")}`,
+      `$${parseFloat(d.subtotal).toLocaleString("es-AR")}`,
+    ]),
+    styles: { fontSize: 10 },
+    headStyles: { fillColor: [30, 30, 46] },
+    alternateRowStyles: { fillColor: [245, 245, 245] },
+  });
+
+  const finalY = doc.lastAutoTable.finalY + 10;
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(12);
+  doc.text(`Total: $${parseFloat(venta.total).toLocaleString("es-AR")}`, 14, finalY);
+
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(9);
+  doc.setTextColor(120, 120, 120);
+  doc.text("Gracias por su compra. Este documento es válido como comprobante de pago.", 14, finalY + 12);
+  doc.text(`Generado el ${new Date().toLocaleDateString("es-AR")} a las ${new Date().toLocaleTimeString("es-AR")}`, 14, finalY + 18);
+
+  doc.save(`recibo_venta_${venta_id}.pdf`);
 };

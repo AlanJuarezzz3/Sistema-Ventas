@@ -6,6 +6,8 @@ import { exportarClientesPDF, exportarClientesExcel } from "../api/exportUtils";
 import { s } from "../styles";
 import ConfirmModal from "../components/ConfirmModal";
 
+const ITEMS_POR_PAGINA = 10;
+
 function Clientes() {
   const [clientes, setClientes] = useState([]);
   const [busqueda, setBusqueda] = useState("");
@@ -16,6 +18,7 @@ function Clientes() {
   const [error, setError] = useState("");
   const [showForm, setShowForm] = useState(false);
   const [confirm, setConfirm] = useState(null);
+  const [pagina, setPagina] = useState(1);
   const admin = isAdmin();
   const navigate = useNavigate();
 
@@ -32,6 +35,10 @@ function Clientes() {
     fetchClientes();
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  useEffect(() => {
+    setPagina(1);
+  }, [busqueda]);
 
   const handleSubmit = async () => {
     if (!nombre) return setError("El nombre es obligatorio");
@@ -83,6 +90,16 @@ function Clientes() {
       (c.telefono && c.telefono.includes(texto))
     );
   });
+
+  const totalPaginas = Math.ceil(clientesFiltrados.length / ITEMS_POR_PAGINA);
+  const clientesPaginados = clientesFiltrados.slice(
+    (pagina - 1) * ITEMS_POR_PAGINA,
+    pagina * ITEMS_POR_PAGINA
+  );
+
+  const cambiarPagina = (nueva) => {
+    if (nueva >= 1 && nueva <= totalPaginas) setPagina(nueva);
+  };
 
   return (
     <div style={{ padding: "2rem" }}>
@@ -165,14 +182,14 @@ function Clientes() {
             </tr>
           </thead>
           <tbody>
-            {clientesFiltrados.length === 0 ? (
+            {clientesPaginados.length === 0 ? (
               <tr>
                 <td colSpan={5} style={{ ...s.td, textAlign: "center", color: "var(--text-muted)" }}>
                   No se encontraron clientes
                 </td>
               </tr>
             ) : (
-              clientesFiltrados.map((c) => (
+              clientesPaginados.map((c) => (
                 <tr key={c.id}
                   style={{ transition: "background 0.15s" }}
                   onMouseEnter={(e) => e.currentTarget.style.backgroundColor = "var(--bg-input)"}
@@ -203,6 +220,44 @@ function Clientes() {
             )}
           </tbody>
         </table>
+
+        {totalPaginas > 1 && (
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "1rem 1.25rem", borderTop: "1px solid var(--border)" }}>
+            <span style={s.muted}>Página {pagina} de {totalPaginas}</span>
+            <div style={{ display: "flex", gap: "6px" }}>
+              <button onClick={() => cambiarPagina(1)} disabled={pagina === 1} style={{ ...s.btnSmall, opacity: pagina === 1 ? 0.4 : 1 }}>«</button>
+              <button onClick={() => cambiarPagina(pagina - 1)} disabled={pagina === 1} style={{ ...s.btnSmall, opacity: pagina === 1 ? 0.4 : 1 }}>‹</button>
+              {Array.from({ length: totalPaginas }, (_, i) => i + 1)
+                .filter(p => p === 1 || p === totalPaginas || Math.abs(p - pagina) <= 1)
+                .reduce((acc, p, i, arr) => {
+                  if (i > 0 && p - arr[i - 1] > 1) acc.push("...");
+                  acc.push(p);
+                  return acc;
+                }, [])
+                .map((p, i) => (
+                  p === "..." ? (
+                    <span key={`dots-${i}`} style={{ ...s.muted, padding: "4px 8px" }}>...</span>
+                  ) : (
+                    <button
+                      key={p}
+                      onClick={() => cambiarPagina(p)}
+                      style={{
+                        ...s.btnSmall,
+                        backgroundColor: pagina === p ? "var(--accent)" : "transparent",
+                        color: pagina === p ? "#fff" : "var(--text-secondary)",
+                        border: pagina === p ? "none" : "1px solid var(--border)",
+                      }}
+                    >
+                      {p}
+                    </button>
+                  )
+                ))
+              }
+              <button onClick={() => cambiarPagina(pagina + 1)} disabled={pagina === totalPaginas} style={{ ...s.btnSmall, opacity: pagina === totalPaginas ? 0.4 : 1 }}>›</button>
+              <button onClick={() => cambiarPagina(totalPaginas)} disabled={pagina === totalPaginas} style={{ ...s.btnSmall, opacity: pagina === totalPaginas ? 0.4 : 1 }}>»</button>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
