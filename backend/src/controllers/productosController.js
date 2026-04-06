@@ -1,5 +1,18 @@
+/**
+ * productosController.js — Controlador de productos
+ *
+ * Maneja todas las operaciones CRUD sobre la tabla productos.
+ * Incluye validaciones de datos antes de insertar o actualizar.
+ * El campo stock se agregó para controlar el inventario disponible.
+ * Al crear un producto verifica que no exista otro con el mismo nombre (case insensitive).
+ */
+
 const db = require("../config/db");
 
+/**
+ * getProductos — Obtiene todos los productos
+ * GET /productos
+ */
 const getProductos = (req, res) => {
   db.query("SELECT * FROM productos", (err, result) => {
     if (err) {
@@ -10,6 +23,11 @@ const getProductos = (req, res) => {
   });
 };
 
+/**
+ * createProducto — Crea un nuevo producto
+ * Verifica que no exista otro producto con el mismo nombre antes de insertar.
+ * POST /productos
+ */
 const createProducto = (req, res) => {
   const { nombre, precio, stock } = req.body;
 
@@ -25,6 +43,7 @@ const createProducto = (req, res) => {
     return res.status(400).json({ mensaje: "Stock inválido" });
   }
 
+  // Verifica que no exista un producto con el mismo nombre (sin importar mayúsculas)
   db.query(
     "SELECT id FROM productos WHERE LOWER(nombre) = LOWER(?)",
     [nombre],
@@ -34,7 +53,7 @@ const createProducto = (req, res) => {
         return res.status(500).json({ mensaje: "Error interno del servidor" });
       }
       if (result.length > 0) {
-        return res.status(400).json({ mensaje: `Ese producto ya se encuentra agregado` });
+        return res.status(400).json({ mensaje: "Ese producto ya se encuentra agregado" });
       }
 
       db.query(
@@ -52,6 +71,10 @@ const createProducto = (req, res) => {
   );
 };
 
+/**
+ * updateProducto — Actualiza nombre, precio y stock de un producto
+ * PUT /productos/:id
+ */
 const updateProducto = (req, res) => {
   const { id } = req.params;
   const { nombre, precio, stock } = req.body;
@@ -84,6 +107,11 @@ const updateProducto = (req, res) => {
   );
 };
 
+/**
+ * deleteProducto — Elimina un producto por ID
+ * Solo el admin puede eliminar productos (controlado por el middleware verificarAdmin).
+ * DELETE /productos/:id
+ */
 const deleteProducto = (req, res) => {
   const { id } = req.params;
 

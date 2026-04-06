@@ -1,5 +1,28 @@
+/**
+ * ventasController.js — Controlador de ventas
+ *
+ * Maneja todas las operaciones sobre la tabla ventas y detalle_ventas.
+ * Una venta puede tener tres estados:
+ *   - activa: venta registrada pero no pagada
+ *   - pagada: venta confirmada y cobrada
+ *   - anulada: venta cancelada, el stock se restaura automáticamente
+ *
+ * Reglas de negocio importantes:
+ *   - Al crear una venta se descuenta el stock de cada producto
+ *   - Al anular una venta se restaura el stock de cada producto
+ *   - Una venta pagada NO se puede anular
+ *   - Solo se pueden eliminar ventas que estén anuladas
+ *   - Al eliminar una venta se borra también su detalle
+ */
+
 const db = require("../config/db");
 
+/**
+ * getVentas — Obtiene todas las ventas con datos del cliente
+ * Usa JOIN con clientes para devolver nombre y email del cliente.
+ * Ordena por fecha descendente (más reciente primero).
+ * GET /ventas
+ */
 const getVentas = (req, res) => {
   const query = `
     SELECT v.id, v.fecha, v.total, v.estado,
@@ -17,6 +40,12 @@ const getVentas = (req, res) => {
   });
 };
 
+/**
+ * getVentaById — Obtiene una venta con su detalle completo de productos
+ * Hace dos queries: una para la venta y otra para el detalle.
+ * El detalle incluye nombre del producto, cantidad, precio unitario y subtotal.
+ * GET /ventas/:id
+ */
 const getVentaById = (req, res) => {
   const { id } = req.params;
 
@@ -59,6 +88,17 @@ const getVentaById = (req, res) => {
   });
 };
 
+/**
+ * createVenta — Crea una nueva venta con su detalle de productos
+ * Flujo:
+ *   1. Valida que el cliente exista
+ *   2. Verifica que haya stock suficiente para cada producto
+ *   3. Calcula el total sumando cantidad * precio_unitario de cada item
+ *   4. Inserta la venta en la tabla ventas
+ *   5. Inserta el detalle en detalle_ventas (bulk insert)
+ *   6. Descuenta el stock de cada producto usando Promise.all
+ * POST /ventas
+ */
 const createVenta = (req, res) => {
   const { cliente_id, productos } = req.body;
 
@@ -83,6 +123,7 @@ const createVenta = (req, res) => {
 
     const productoIds = productos.map((p) => p.producto_id);
 
+    // Verifica el stock disponible de todos los productos de la venta
     db.query(
       "SELECT id, nombre, stock FROM productos WHERE id IN (?)",
       [productoIds],
@@ -116,6 +157,8 @@ const createVenta = (req, res) => {
             }
 
             const venta_id = ventaResult.insertId;
+
+            // Prepara el bulk insert para detalle_ventas
             const detalle = productos.map((p) => [
               venta_id, p.producto_id, p.cantidad, p.precio_unitario
             ]);
@@ -129,6 +172,7 @@ const createVenta = (req, res) => {
                   return res.status(500).json({ mensaje: "Error interno del servidor" });
                 }
 
+                // Descuenta el stock de cada producto en paralelo
                 const updatePromises = productos.map((p) => {
                   return new Promise((resolve, reject) => {
                     db.query(
@@ -154,6 +198,13 @@ const createVenta = (req, res) => {
   });
 };
 
+/**
+ * anularVenta — Cambia el estado de una venta a "anulada"
+ * Restaura el stock de cada producto involucrado en la venta.
+ * No se puede anular una venta que ya está pagada.
+ * Solo el admin puede anular ventas (controlado por verificarAdmin).
+ * PUT /ventas/:id/anular
+ */
 const anularVenta = (req, res) => {
   const { id } = req.params;
 
@@ -187,6 +238,7 @@ const anularVenta = (req, res) => {
             return res.status(500).json({ mensaje: "Error interno del servidor" });
           }
 
+          // Restaura el stock de cada producto en paralelo
           const restorePromises = detalleResult.map((d) => {
             return new Promise((resolve, reject) => {
               db.query(
@@ -209,6 +261,12 @@ const anularVenta = (req, res) => {
   });
 };
 
+/**
+ * marcarPagada — Cambia el estado de una venta a "pagada"
+ * Se usa cuando el pago se confirma manualmente o via webhook de Mercado Pago.
+ * Solo se pueden marcar como pagadas las ventas activas.
+ * PUT /ventas/:id/pagada
+ */
 const marcarPagada = (req, res) => {
   const { id } = req.params;
 
@@ -234,6 +292,13 @@ const marcarPagada = (req, res) => {
   });
 };
 
+/**
+ * eliminarVenta — Elimina definitivamente una venta y su detalle
+ * Solo se pueden eliminar ventas que estén anuladas.
+ * Primero elimina el detalle (detalle_ventas) y luego la venta.
+ * El stock NO se modifica porque ya fue restaurado al anular.
+ * DELETE /ventas/:id
+ */
 const eliminarVenta = (req, res) => {
   const { id } = req.params;
 
@@ -249,6 +314,7 @@ const eliminarVenta = (req, res) => {
       return res.status(400).json({ mensaje: "Solo se pueden eliminar ventas anuladas" });
     }
 
+    // Primero elimina el detalle para respetar la foreign key
     db.query("DELETE FROM detalle_ventas WHERE venta_id = ?", [id], (err) => {
       if (err) {
         console.error("Error al eliminar detalle:", err);

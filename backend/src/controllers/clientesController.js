@@ -1,5 +1,20 @@
+/**
+ * clientesController.js — Controlador de clientes
+ *
+ * Maneja todas las operaciones CRUD sobre la tabla clientes.
+ * Los clientes son las personas a las que se les realizan ventas.
+ * NO son usuarios del sistema — no tienen login ni contraseña.
+ *
+ * También incluye el historial de compras de un cliente,
+ * que devuelve todas sus ventas con el detalle de productos de cada una.
+ */
+
 const db = require("../config/db");
 
+/**
+ * getClientes — Obtiene todos los clientes
+ * GET /clientes
+ */
 const getClientes = (req, res) => {
   db.query("SELECT * FROM clientes", (err, result) => {
     if (err) {
@@ -10,6 +25,10 @@ const getClientes = (req, res) => {
   });
 };
 
+/**
+ * getClienteById — Obtiene un cliente por su ID
+ * GET /clientes/:id
+ */
 const getClienteById = (req, res) => {
   const { id } = req.params;
   db.query("SELECT * FROM clientes WHERE id = ?", [id], (err, result) => {
@@ -24,6 +43,12 @@ const getClienteById = (req, res) => {
   });
 };
 
+/**
+ * createCliente — Crea un nuevo cliente
+ * Email y teléfono son opcionales, se guardan como NULL si no se proporcionan.
+ * Cualquier usuario logueado puede crear clientes (no solo admin).
+ * POST /clientes
+ */
 const createCliente = (req, res) => {
   const { nombre, email, telefono } = req.body;
 
@@ -44,6 +69,11 @@ const createCliente = (req, res) => {
   );
 };
 
+/**
+ * updateCliente — Actualiza los datos de un cliente
+ * Solo el admin puede actualizar clientes (controlado por verificarAdmin).
+ * PUT /clientes/:id
+ */
 const updateCliente = (req, res) => {
   const { id } = req.params;
   const { nombre, email, telefono } = req.body;
@@ -68,6 +98,11 @@ const updateCliente = (req, res) => {
   );
 };
 
+/**
+ * deleteCliente — Elimina un cliente por ID
+ * Solo el admin puede eliminar clientes (controlado por verificarAdmin).
+ * DELETE /clientes/:id
+ */
 const deleteCliente = (req, res) => {
   const { id } = req.params;
 
@@ -87,6 +122,12 @@ const deleteCliente = (req, res) => {
   );
 };
 
+/**
+ * getHistorialCliente — Obtiene el historial completo de compras de un cliente
+ * Devuelve todas sus ventas (activas, pagadas y anuladas) con el detalle
+ * de productos de cada venta usando JSON_ARRAYAGG para agrupar el detalle.
+ * GET /clientes/:id/historial
+ */
 const getHistorialCliente = (req, res) => {
   const { id } = req.params;
 
@@ -101,7 +142,7 @@ const getHistorialCliente = (req, res) => {
 
     const query = `
       SELECT 
-        v.id, v.fecha, v.total,
+        v.id, v.fecha, v.total, v.estado,
         JSON_ARRAYAGG(
           JSON_OBJECT(
             'producto', p.nombre,
@@ -114,7 +155,7 @@ const getHistorialCliente = (req, res) => {
       JOIN detalle_ventas dv ON v.id = dv.venta_id
       JOIN productos p ON dv.producto_id = p.id
       WHERE v.cliente_id = ?
-      GROUP BY v.id, v.fecha, v.total
+      GROUP BY v.id, v.fecha, v.total, v.estado
       ORDER BY v.fecha DESC
     `;
 
@@ -128,6 +169,7 @@ const getHistorialCliente = (req, res) => {
         cliente: clienteResult[0],
         ventas: ventasResult.map((v) => ({
           ...v,
+          // JSON_ARRAYAGG devuelve string en algunos casos, se parsea si es necesario
           detalle: typeof v.detalle === "string" ? JSON.parse(v.detalle) : v.detalle
         }))
       });
