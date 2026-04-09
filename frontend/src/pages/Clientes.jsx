@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "@tanstack/react-router";
+import * as XLSX from "xlsx";
 import api from "../api/axios";
 import { isAdmin } from "../api/auth";
 import { exportarClientesPDF, exportarClientesExcel } from "../api/exportUtils";
@@ -33,7 +34,7 @@ function Clientes() {
 
   useEffect(() => {
     fetchClientes();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
@@ -80,6 +81,37 @@ function Clientes() {
   const handleCancelar = () => {
     setEditId(null); setNombre(""); setEmail(""); setTelefono("");
     setError(""); setShowForm(false);
+  };
+
+  const handleImportarExcel = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = async (event) => {
+      try {
+        const workbook = XLSX.read(event.target.result, { type: "binary" });
+        const sheet = workbook.Sheets[workbook.SheetNames[0]];
+        const datos = XLSX.utils.sheet_to_json(sheet);
+
+        if (datos.length === 0) return setError("El archivo está vacío");
+
+        const clientesImportados = datos.map(row => ({
+          nombre: row["Nombre"] || row["nombre"] || "",
+          email: row["Email"] || row["email"] || "",
+          telefono: row["Telefono"] || row["telefono"] || row["Teléfono"] || ""
+        }));
+
+        const res = await api.post("/clientes/importar", { clientes: clientesImportados });
+        setError("");
+        alert(`✅ ${res.data.mensaje}: ${res.data.insertados} insertados, ${res.data.duplicados} duplicados ignorados`);
+        fetchClientes();
+      } catch (err) {
+        setError(err.response?.data?.mensaje || "Error al importar el archivo");
+      }
+    };
+    reader.readAsBinaryString(file);
+    e.target.value = "";
   };
 
   const clientesFiltrados = clientes.filter((c) => {
@@ -159,11 +191,20 @@ function Clientes() {
           value={busqueda}
           onChange={(e) => setBusqueda(e.target.value)}
         />
-        <span style={{ ...s.muted, fontSize: "14px", color: "var(--text-secondary)" }}>
+        <span style={{ color: "var(--text-secondary)", fontSize: "14px" }}>
           {clientesFiltrados.length} resultado{clientesFiltrados.length !== 1 ? "s" : ""}
         </span>
         {admin && (
           <div style={{ marginLeft: "auto", display: "flex", gap: "8px" }}>
+            <label style={{ ...s.btnSecondary, cursor: "pointer" }}>
+              📥 Importar Excel
+              <input
+                type="file"
+                accept=".xlsx,.xls"
+                style={{ display: "none" }}
+                onChange={handleImportarExcel}
+              />
+            </label>
             <button onClick={() => exportarClientesPDF(clientesFiltrados)} style={s.btnPrimary}>Exportar PDF</button>
             <button onClick={() => exportarClientesExcel(clientesFiltrados)} style={s.btnPrimary}>Exportar Excel</button>
           </div>

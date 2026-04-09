@@ -1,0 +1,1 @@
+aca falta, que se pueda agregar un descuento (puede ser a todos los productos de forma automatizada, o por categoritas) falta agregar categorias. falta agregar iva, falta agregar una opcion para que pueda ver el presupuesto con impuestos o sin impuestos de los productos.
