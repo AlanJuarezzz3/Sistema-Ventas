@@ -323,16 +323,17 @@ function Ventas() {
       <div style={{ ...s.card, overflow: "hidden" }}>
         <table style={s.table}>
           <thead>
-            <tr>
-              <th style={s.th}>ID</th>
-              <th style={s.th}>Cliente</th>
-              <th style={s.th}>Total</th>
-              <th style={s.th}>Estado</th>
-              <th style={s.th}>Fecha</th>
-              <th style={s.th}>Acciones</th>
-              <th style={s.th}>Pagos</th>
-            </tr>
-          </thead>
+  <tr>
+    <th style={s.th}>ID</th>
+    <th style={s.th}>Cliente</th>
+    <th style={s.th}>Total</th>
+    <th style={s.th}>Estado</th>
+    <th style={s.th}>Fecha</th>
+    <th style={s.th}>Vendedor</th>
+    <th style={s.th}>Acciones</th>
+    <th style={s.th}>Pagos</th>
+  </tr>
+</thead>
           <tbody>
             {ventasPaginadas.length === 0 ? (
               <tr>
@@ -358,6 +359,11 @@ function Ventas() {
                     </span>
                   </td>
                   <td style={s.td}>{new Date(v.fecha).toLocaleDateString("es-AR")}</td>
+<td style={s.td}>
+  <span style={{ fontSize: "12px", color: "var(--text-secondary)" }}>
+    {v.vendedor_nombre || "—"}
+  </span>
+</td>
                   <td style={s.td}>
                     <div style={{ display: "flex", gap: "6px" }}>
                       {v.estado === "activa" && admin && (
