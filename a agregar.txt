@@ -1,1 +1,11 @@
-aca falta, que se pueda agregar un descuento (puede ser a todos los productos de forma automatizada, o por categoritas) falta agregar categorias. falta agregar iva, falta agregar una opcion para que pueda ver el presupuesto con impuestos o sin impuestos de los productos.
+Tambien tener en cuenta que funciona si tenes levantado el SQL.
+
+como levantar sv:
+cuenta: alan@email.com
+clave: 1234
+
+levantamos con npm run dev- el frontend y el backend por separado.
+cd backend
+npm run dev
+cd frontend
+npm run dev

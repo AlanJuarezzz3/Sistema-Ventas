@@ -23,7 +23,7 @@ app.use(express.json()); // Parsea el body de las requests como JSON
 
 // Ruta base — verifica que el servidor esté corriendo
 app.get("/", (req, res) => {
-  res.json({ mensaje: "API funcionando 🚀" });
+  res.json({ mensaje: "API funcionando " });
 });
 
 // Registro de rutas
